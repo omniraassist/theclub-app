@@ -1,0 +1,17 @@
+{
+  "name": "The Club Fitness",
+  "short_name": "The Club",
+  "description": "Acceso 24 h y cuota de socio de The Club Fitness Sabadell",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0900",
+  "theme_color": "#0A0900",
+  "lang": "es",
+  "icons": [
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

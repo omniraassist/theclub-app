@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0900">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Club">
+<title>The Club</title>
+<link rel="icon" href="isotipo.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,700..800&family=Instrument+Serif:ital@1&family=Inter+Tight:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--bg:#0A0900;--card:#15130C;--raise:#1D1A10;--ink:#F6F3EC;--muted:#B9B2A1;--faint:#7E786A;--gold:#E8D070;--line:rgba(246,243,236,.08);--line2:rgba(246,243,236,.15);
+  --ok:#86C9A0;--bad:#E2806F;--gold-grad:linear-gradient(118deg,#9E8030 0%,#E8D070 38%,#F7ECB0 56%,#C3AD5B 100%);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.kw{font-family:'Bricolage Grotesque',sans-serif;font-style:normal;font-weight:800;font-stretch:80%;color:var(--gold)}
+.serif{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400}
+.eyebrow{margin:0;font-size:12px;font-weight:600;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+.lab{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+h1{margin:6px 0 0;font-size:42px;line-height:1}
+h2{margin:0;font-size:15px;font-weight:700}
+.muted{color:var(--muted)}.faint{color:var(--faint)}
+
+.shell{max-width:460px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
+.pant{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(14px + env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) 28px max(22px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:16px;position:relative;animation:in .3s cubic-bezier(.2,.8,.2,1) both}
+.pant::-webkit-scrollbar{display:none}
+.glow::before{content:"";position:absolute;left:-120px;top:-160px;width:420px;height:420px;border-radius:50%;background:radial-gradient(closest-side,rgba(232,208,112,.13),rgba(232,208,112,0));pointer-events:none}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+header{display:flex;align-items:center;justify-content:space-between;position:relative;padding-top:18px}
+header img{height:40px}
+.chipbtn{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:13px;font-weight:600}
+
+nav.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(10,9,0,.97);position:relative}
+nav.tabs .ind{position:absolute;top:-1px;left:8px;width:calc((100% - 16px)/5);height:2px;display:flex;justify-content:center;transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+nav.tabs .ind i{width:28px;height:2px;border-radius:2px;background:var(--gold)}
+nav.tabs button{min-height:52px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted);transition:color .2s;position:relative}
+nav.tabs button[aria-current="page"]{color:var(--gold)}
+nav.tabs .dot{position:absolute;top:6px;left:calc(50% + 7px);width:8px;height:8px;border-radius:50%;background:var(--gold)}
+
+.qr{width:100%;padding:22px 22px 18px;border:0;border-radius:28px;background:var(--ink);display:flex;flex-direction:column;align-items:center;gap:16px;color:#0A0900;transition:transform .15s}
+.qr:active{transform:scale(.985)}
+.qr svg{width:min(230px,66vw);height:auto;display:block}
+.barra{width:100%;height:4px;border-radius:4px;background:rgba(10,9,0,.1);overflow:hidden}
+.barra i{display:block;height:100%;background:#0A0900;transition:width 1s linear}
+.qrpie{width:100%;display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:#4A4636}
+.bloq{min-height:280px;border-radius:28px;border:1px dashed rgba(232,208,112,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px 30px}
+.card{padding:16px 18px;border-radius:20px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.card.oro{background:linear-gradient(135deg,#1C1A10,#0F0E07);border-color:rgba(232,208,112,.4)}
+.fila{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c,var(--gold))}
+.lista{display:flex;flex-direction:column}
+.it{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.it .q{flex:1;min-width:0}
+.it .q small{display:block;color:var(--faint);font-size:12.5px}
+.nota{font-size:12.5px;color:var(--muted);text-align:center;margin:0}
+.btn{min-height:52px;width:100%;border:0;border-radius:16px;background:var(--gold-grad);color:#0A0900;font-weight:800;font-size:16px;transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{background:var(--raise);color:var(--faint)}
+.btn2{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:transparent;font-weight:700;font-size:13.5px}
+.btnlink{min-height:44px;border:0;background:transparent;color:var(--gold);font-weight:700}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px;border-radius:16px;background:var(--card);border:1px solid var(--line);position:relative}
+.seg button{position:relative;z-index:1;height:42px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-weight:700;transition:color .25s}
+.seg button[aria-pressed="true"]{color:#0A0900}
+.seg .ind{position:absolute;top:4px;bottom:4px;left:4px;border-radius:12px;background:var(--ink);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.dias{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.dias::-webkit-scrollbar{display:none}
+.dia{flex:none;width:70px;height:76px;border-radius:16px;border:1px solid var(--line2);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.dia[aria-pressed="true"]{border-color:var(--gold);background:rgba(232,208,112,.14);color:var(--gold)}
+.dia b{font:800 24px/1 'Bricolage Grotesque',sans-serif;font-stretch:80%}
+.dia span{font-size:11px;font-weight:700;letter-spacing:.1em;opacity:.8;text-transform:uppercase}
+.horas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hora{height:48px;border-radius:14px;border:1px solid var(--line2);background:var(--card);font-weight:700}
+.hora[aria-pressed="true"]{border-color:var(--gold);background:rgba(232,208,112,.14);color:var(--gold)}
+.hora:disabled{background:transparent;color:rgba(185,178,161,.45);text-decoration:line-through}
+.reto{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+.reto i{height:8px;border-radius:3px;background:rgba(246,243,236,.12);transition:background .4s}
+.reto i.on{background:var(--gold)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:transparent;font-weight:600;font-size:14px}
+.chip[aria-pressed="true"]{border-color:var(--gold);background:rgba(232,208,112,.14);color:var(--gold)}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.campo input,.campo textarea{min-height:50px;padding:12px 14px;border-radius:14px;border:1px solid var(--line2);background:var(--bg);font-size:16px}
+.err{color:var(--bad);font-size:14px;margin:0}
+.aviso{padding:16px 18px;border-radius:20px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.aviso.dest{background:linear-gradient(135deg,#1C1A10,#0F0E07);border-color:rgba(232,208,112,.4)}
+.aviso b{font-size:16px}
+.aviso p{margin:0;color:#E4DFD2;font-size:14px;white-space:pre-line}
+.velo{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:30;animation:fade .2s both}
+.hoja{position:fixed;left:0;right:0;bottom:0;z-index:31;max-width:460px;margin:0 auto;max-height:90%;overflow:auto;background:var(--card);border-top:1px solid rgba(232,208,112,.3);border-radius:26px 26px 0 0;padding:10px 22px calc(26px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;animation:up .36s cubic-bezier(.16,1,.3,1) both}
+.hoja .asa{align-self:center;width:40px;height:4px;border-radius:2px;background:rgba(246,243,236,.2)}
+.full{position:fixed;inset:0;z-index:40;background:var(--ink);color:#0A0900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px;animation:fade .2s both}
+.full svg{width:min(320px,82vw);height:auto}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:50;max-width:340px;width:max-content;padding:12px 16px;border-radius:14px;background:var(--ink);color:#0A0900;font-weight:700;font-size:14px;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:fade .2s both}
+.vacio{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:20px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script type="module">
+import { html, render, useState, useEffect, useCallback } from 'https://unpkg.com/htm@3.1.1/preact/standalone.module.js';
+import { codigoQR } from './qr.js';
+
+const sb = window.supabase.createClient(window.THECLUB.url, window.THECLUB.anonKey);
+const WHATSAPP = 'https://wa.me/34610847910';
+const MAPA = 'https://www.google.com/maps/search/?api=1&query=The+Club+Fitness+Carrer+Anselm+Turmeda+15+Sabadell';
+const GUARDADO = 'theclub-socio';
+const RETO = 12;
+const TIPOS = ['Pierna', 'Torso', 'Espalda', 'Pecho', 'Brazos', 'Full body', 'Cardio', 'Boxeo', 'Otro'];
+const SEM = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const SIT = { al_dia: ['Al día', 'var(--ok)'], vence_pronto: ['Vence pronto', 'var(--gold)'], vencido: ['Cuota vencida', 'var(--bad)'], impago: ['Pago pendiente', 'var(--bad)'], sin_cuota: ['Sin cuota', 'var(--muted)'], baja: ['De baja', 'var(--muted)'], congelado: ['Congelada', 'var(--muted)'] };
+
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+const fmt = (d) => d ? d.slice(0, 10).split('-').reverse().join('/') : '—';
+const eur = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
+const hhmm = (t) => new Date(t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+const diaLargo = (t) => new Date(t).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+const leerLS = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const guardarLS = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const msgError = (e) => (e?.message || String(e)).replace(/^.*?:\s(?=[A-ZÁÉÍÓÚ])/, '');
+
+function situacion(estado, periodos, deudas) {
+  const hasta = periodos.map((p) => p.hasta).filter(Boolean).sort().pop() || null;
+  const debe = deudas.filter((d) => !d.pagada).reduce((a, d) => a + Number(d.importe), 0);
+  const en7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const sit = estado !== 'activo' ? estado : debe > 0 ? 'impago' : !hasta ? 'sin_cuota' : hasta < hoyISO() ? 'vencido' : hasta < en7 ? 'vence_pronto' : 'al_dia';
+  return { hasta, debe, sit };
+}
+
+async function cargarSocio() {
+  try { await sb.rpc('vincular_socio'); } catch {}
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: cred } = await sb.from('credenciales').select('socio_id,clave').eq('user_id', user.id).maybeSingle();
+  if (!cred) return null;
+  const [{ data: s }, { data: p }, { data: d }, { data: t }] = await Promise.all([
+    sb.from('socios').select('id,num_socio,nombre,estado,email,movil,fecha_alta').eq('id', cred.socio_id).single(),
+    sb.from('periodos').select('tarifa,texto,desde,hasta,origen').eq('socio_id', cred.socio_id).order('hasta', { ascending: false, nullsFirst: false }),
+    sb.from('deudas').select('importe,pagada,concepto,creado').eq('socio_id', cred.socio_id).order('creado', { ascending: false }),
+    sb.from('tarifas').select('codigo,nombre')
+  ]);
+  const nombreTarifa = (c) => (t || []).find((x) => x.codigo === c)?.nombre;
+  const periodos = (p || []).map((x) => ({ ...x, nombre: nombreTarifa(x.tarifa) || x.texto || 'Periodo' }));
+  const info = { id: s.id, num: s.num_socio, nombre: s.nombre, email: s.email, movil: s.movil, alta: s.fecha_alta, clave: cred.clave,
+    tarifa: periodos.find((x) => x.hasta)?.nombre || null, periodos, deudas: d || [], ...situacion(s.estado, periodos, d || []), actualizado: new Date().toISOString() };
+  guardarLS(GUARDADO, info);
+  return info;
+}
+
+function svgQR(texto) { const q = window.qrcode(0, 'M'); q.addData(texto); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }
+
+const ICON = {
+  acceso: html`<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>`,
+  entrenar: html`<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>`,
+  reservas: html`<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`,
+  club: html`<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>`,
+  cuota: html`<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>`,
+  wa: html`<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>`,
+  pin: html`<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`,
+  flecha: html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`
+};
+
+// ======================= ENTRADA =======================
+function Login({ onOk }) {
+  const [email, setEmail] = useState(''); const [codigo, setCodigo] = useState(''); const [pass, setPass] = useState('');
+  const [paso, setPaso] = useState('correo'); const [err, setErr] = useState(''); const [ocup, setOcup] = useState(false);
+  const run = async (fn) => { setErr(''); setOcup(true); try { await fn(); } finally { setOcup(false); } };
+  const enviar = (e) => { e.preventDefault(); run(async () => {
+    const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
+    if (error) setErr('No hemos podido enviar el código. Prueba de nuevo en un rato o entra con contraseña.'); else setPaso('codigo'); }); };
+  const verificar = (e) => { e.preventDefault(); run(async () => {
+    let { error } = await sb.auth.verifyOtp({ email: email.trim(), token: codigo.trim(), type: 'email' });
+    if (error) ({ error } = await sb.auth.verifyOtp({ email: email.trim(), token: codigo.trim(), type: 'magiclink' }));
+    if (error) setErr('Código incorrecto o caducado.'); else onOk(); }); };
+  const conClave = (e) => { e.preventDefault(); run(async () => {
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: pass });
+    if (error) setErr('Correo o contraseña incorrectos.'); else onOk(); }); };
+  return html`<div class="shell"><div class="pant glow">
+    <header><img src="logo.svg" alt="The Club Fitness" /></header>
+    <div><p class="eyebrow">Acceso 24 h</p><h1 class="serif">Hola, <span class="kw">SOCIO</span></h1></div>
+    <p class="muted" style="margin:0">Entra con el correo que diste al apuntarte en el club.</p>
+    ${paso === 'correo' && html`<form onSubmit=${enviar} style="display:flex;flex-direction:column;gap:14px">
+      <div class="campo"><label for="em">Correo</label><input id="em" type="email" autocomplete="email" inputmode="email" value=${email} onInput=${(e) => setEmail(e.target.value)} required /></div>
+      ${err && html`<p class="err">${err}</p>`}
+      <button class="btn" disabled=${ocup}>${ocup ? 'Enviando…' : 'Enviarme un código'}</button>
+      <button type="button" class="btnlink" onClick=${() => { setErr(''); setPaso('clave'); }}>Entrar con contraseña</button></form>`}
+    ${paso === 'codigo' && html`<form onSubmit=${verificar} style="display:flex;flex-direction:column;gap:14px">
+      <p style="margin:0">Te hemos enviado un código a <b>${email}</b>. Si no llega, mira en spam.</p>
+      <div class="campo"><label for="co">Código</label><input id="co" inputmode="numeric" autocomplete="one-time-code" value=${codigo} onInput=${(e) => setCodigo(e.target.value)} required /></div>
+      ${err && html`<p class="err">${err}</p>`}
+      <button class="btn" disabled=${ocup}>Entrar</button>
+      <button type="button" class="btnlink" onClick=${() => setPaso('correo')}>Cambiar de correo</button></form>`}
+    ${paso === 'clave' && html`<form onSubmit=${conClave} style="display:flex;flex-direction:column;gap:14px">
+      <div class="campo"><label for="em2">Correo</label><input id="em2" type="email" autocomplete="username" value=${email} onInput=${(e) => setEmail(e.target.value)} required /></div>
+      <div class="campo"><label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password" value=${pass} onInput=${(e) => setPass(e.target.value)} required /></div>
+      ${err && html`<p class="err">${err}</p>`}
+      <button class="btn" disabled=${ocup}>Entrar</button>
+      <button type="button" class="btnlink" onClick=${() => setPaso('correo')}>Mejor con un código</button></form>`}
+  </div></div>`;
+}
+
+// ======================= ACCESO =======================
+function Acceso({ socio, ir }) {
+  const [ahora, setAhora] = useState(Date.now()); const [grande, setGrande] = useState(false);
+  const [aforo, setAforo] = useState(null); const [entradas, setEntradas] = useState([]); const [reservas, setReservas] = useState([]);
+  useEffect(() => { const id = setInterval(() => setAhora(Date.now()), 1000); return () => clearInterval(id); }, []);
+  useEffect(() => {
+    sb.rpc('aforo_actual').then(({ data }) => data && setAforo(data)).catch(() => {});
+    sb.from('accesos').select('cuando,resultado').eq('socio_id', socio.id).eq('resultado', 'ok').neq('lector', 'simulador').order('cuando', { ascending: false }).limit(3).then(({ data }) => setEntradas(data || []));
+    misReservas(socio.id).then(setReservas).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!grande || !('wakeLock' in navigator)) return;
+    let lock; navigator.wakeLock.request('screen').then((l) => (lock = l)).catch(() => {});
+    return () => lock?.release?.();
+  }, [grande]);
+  const { texto, segundosRestantes } = codigoQR(socio.clave, socio.num, ahora);
+  const qr = svgQR(texto);
+  const [etiqueta, color] = SIT[socio.sit] || ['', 'var(--muted)'];
+  const puede = ['al_dia', 'vence_pronto'].includes(socio.sit);
+  return html`<div class="pant glow">
+    <header><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn" onClick=${() => ir('cuota')}>Nº ${socio.num}</button></header>
+    <div><p class="eyebrow">Acceso 24 h</p><h1 class="serif">Hola, <span class="kw">${(socio.nombre || '').split(' ')[0].toUpperCase()}</span></h1></div>
+    ${puede ? html`<button class="qr" onClick=${() => setGrande(true)} aria-label="Ampliar el código QR">
+        <span dangerouslySetInnerHTML=${{ __html: qr }}></span>
+        <span class="barra"><i style=${'width:' + Math.round(segundosRestantes / 30 * 100) + '%'}></i></span>
+        <span class="qrpie"><span>Toca para ampliar</span><span class="num">Nuevo código en 0:${String(segundosRestantes).padStart(2, '0')}</span></span>
+      </button>` : html`<div class="bloq"><p class="serif" style="font-size:28px;margin:0">Tu acceso está en pausa</p>
+        <p style="margin:0;color:var(--muted);font-size:14px">${socio.sit === 'impago' ? 'Tienes un pago pendiente.' : socio.sit === 'vencido' ? 'Tu cuota ha vencido.' : 'Tu cuota no está activa.'} Pásate por recepción o escríbenos por WhatsApp.</p>
+        <a class="btn2" href=${WHATSAPP} target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;color:var(--gold)">${ICON.wa} Escribir al club</a></div>`}
+    ${reservas.map((r) => html`<button class="card oro" onClick=${() => ir('reservas')} style="flex-direction:row;align-items:center;gap:14px;text-align:left;color:var(--ink)">
+      <span style="width:46px;height:46px;flex:none;border-radius:12px;background:var(--gold);color:#0A0900;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.1em">${SEM[new Date(r.inicio).getDay()]}</span><span style="font:800 20px 'Bricolage Grotesque';font-stretch:80%">${new Date(r.inicio).getDate()}</span></span>
+      <span style="flex:1"><span class="lab">Tu próxima reserva</span><br /><b>${r.servicio} · ${hhmm(r.inicio)} h</b></span><span style="color:var(--gold)">${ICON.flecha}</span></button>`)}
+    <div class="fila">
+      <button class="card" onClick=${() => ir('cuota')} style="text-align:left;color:var(--ink)"><span class="lab">Tu cuota</span><b>${socio.tarifa || '—'}</b><span class="pill" style=${'--c:' + color}>${etiqueta}</span></button>
+      ${aforo?.hay_datos ? html`<div class="card"><span class="lab">Aforo ahora</span><b>${aforo.dentro < 25 ? 'Tranquilo' : aforo.dentro < 60 ? 'Normal' : 'Lleno'}</b><span class="pill" style="--c:var(--muted)">${aforo.dentro} dentro</span></div>`
+        : html`<div class="card"><span class="lab">Pagado hasta</span><b class="num">${fmt(socio.hasta)}</b><span class="pill" style="--c:var(--muted)">${socio.debe > 0 ? 'Debes ' + eur(socio.debe) : 'Sin pagos pendientes'}</span></div>`}
+    </div>
+    ${entradas.length > 0 && html`<div class="card"><span class="lab">Tus últimas entradas</span><div class="lista">${entradas.map((e) => html`<div class="it"><span class="q num">${diaLargo(e.cuando)}</span><span class="num muted">${hhmm(e.cuando)}</span></div>`)}</div></div>`}
+    <p class="nota">Si el lector no lo lee, sube el brillo. El código funciona aunque no tengas cobertura.</p>
+    ${grande && html`<div class="full" onClick=${() => setGrande(false)} role="dialog" aria-label="Código QR ampliado">
+      <span class="eyebrow" style="color:#4A4636">Acceso · ${socio.nombre}</span>
+      <span dangerouslySetInnerHTML=${{ __html: qr }}></span>
+      <span class="num" style="font-weight:700;color:#4A4636">Nuevo código en 0:${String(segundosRestantes).padStart(2, '0')}</span>
+      <span style="font-size:13px;color:#4A4636">Sube el brillo al máximo · toca para cerrar</span></div>`}
+  </div>`;
+}
+
+// ======================= ENTRENAR =======================
+function Entrenar({ socio, avisar }) {
+  const [lista, setLista] = useState(null); const [hoja, setHoja] = useState(false);
+  const cargar = useCallback(async () => {
+    const desde = new Date(); desde.setDate(desde.getDate() - 120);
+    const { data, error } = await sb.from('entrenos').select('*').eq('socio_id', socio.id).gte('fecha', desde.toISOString().slice(0, 10)).order('fecha', { ascending: false }).order('creado', { ascending: false });
+    setLista(error ? [] : data);
+  }, []);
+  useEffect(() => { cargar(); }, []);
+  const mes = hoyISO().slice(0, 7);
+  const delMes = (lista || []).filter((e) => e.fecha.slice(0, 7) === mes);
+  const diasMes = new Set(delMes.map((e) => e.fecha)).size;
+  const semanas = (() => {
+    const set = new Set((lista || []).map((e) => { const d = new Date(e.fecha + 'T12:00:00'); const l = new Date(d); l.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return l.toISOString().slice(0, 10); }));
+    let n = 0; const l = new Date(); l.setDate(l.getDate() - ((l.getDay() + 6) % 7));
+    if (!set.has(l.toISOString().slice(0, 10))) l.setDate(l.getDate() - 7);
+    while (set.has(l.toISOString().slice(0, 10))) { n++; l.setDate(l.getDate() - 7); }
+    return n;
+  })();
+  const minutos = delMes.reduce((a, e) => a + (e.minutos || 0), 0);
+  const borrar = async (e) => { await sb.from('entrenos').delete().eq('id', e.id); avisar('Entreno borrado'); cargar(); };
+  const faltan = Math.max(0, RETO - diasMes);
+  return html`<div class="pant">
+    <header style="padding-top:22px"><div><p class="eyebrow">${MES[new Date().getMonth()]} · tus entrenos</p><h1 class="serif">A <span class="kw">ENTRENAR</span></h1></div></header>
+    <div class="card oro">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span><span class="lab">Reto del mes</span><br /><b>${RETO} días entrenando</b></span><span class="kw num" style="font-size:28px">${diasMes}/${RETO}</span></div>
+      <div class="reto" aria-hidden="true">${Array.from({ length: RETO }, (_, i) => html`<i class=${i < diasMes ? 'on' : ''}></i>`)}</div>
+      <span class="muted" style="font-size:13px">${faltan === 0 ? 'Reto conseguido este mes. Así se hace.' : 'Te faltan ' + faltan + (faltan === 1 ? ' día.' : ' días.')}</span>
+    </div>
+    <div class="fila">
+      <div class="card"><span class="lab">Racha</span><b class="kw num" style="font-size:26px">${semanas}</b><span class="faint" style="font-size:12.5px">${semanas === 1 ? 'semana seguida' : 'semanas seguidas'}</span></div>
+      <div class="card"><span class="lab">Este mes</span><b class="kw num" style="font-size:26px;color:var(--ink)">${Math.round(minutos / 60 * 10) / 10} h</b><span class="faint" style="font-size:12.5px">${delMes.length} entrenos</span></div>
+    </div>
+    <button class="btn" onClick=${() => setHoja(true)}>Apuntar entreno de hoy</button>
+    <div><h2 style="margin-bottom:6px">Historial</h2>
+      ${lista === null ? html`<p class="faint">Cargando…</p>` : lista.length === 0 ? html`<div class="vacio">Aún no has apuntado ningún entreno. Cada día que vengas, apúntalo y suma para el reto.</div>` : html`<div class="lista">
+        ${lista.slice(0, 30).map((e) => html`<div class="it"><div class="q"><b>${e.tipo}</b><small class="num">${diaLargo(e.fecha + 'T12:00:00')}${e.minutos ? ' · ' + e.minutos + ' min' : ''}${e.notas ? ' · ' + e.notas : ''}</small></div>
+          <button class="btn2" style="min-height:36px;font-size:12.5px" onClick=${() => borrar(e)} aria-label=${'Borrar entreno de ' + e.tipo}>Borrar</button></div>`)}</div>`}
+    </div>
+    ${hoja && html`<${HojaEntreno} socio=${socio} cerrar=${() => setHoja(false)} ok=${() => { setHoja(false); avisar('Entreno apuntado. ¡Bien hecho!'); cargar(); }} />`}
+  </div>`;
+}
+function HojaEntreno({ socio, cerrar, ok }) {
+  const [tipo, setTipo] = useState('Pierna'); const [min, setMin] = useState('60'); const [notas, setNotas] = useState(''); const [fecha, setFecha] = useState(hoyISO()); const [err, setErr] = useState('');
+  const guardar = async () => {
+    const { error } = await sb.from('entrenos').insert({ socio_id: socio.id, tipo, minutos: parseInt(min) || null, notas: notas.trim() || null, fecha });
+    if (error) setErr('No se ha podido guardar. ¿Tienes conexión?'); else ok();
+  };
+  return html`<div class="velo" onClick=${cerrar}></div><div class="hoja" role="dialog" aria-label="Apuntar entreno">
+    <span class="asa" aria-hidden="true"></span>
+    <h2 class="serif" style="font-size:30px;font-weight:400">¿Qué has <span class="kw">ENTRENADO</span>?</h2>
+    <div class="chips" role="group" aria-label="Tipo de entreno">${TIPOS.map((t) => html`<button class="chip" aria-pressed=${t === tipo ? 'true' : 'false'} onClick=${() => setTipo(t)}>${t}</button>`)}</div>
+    <div class="fila">
+      <div class="campo"><label for="m">Minutos</label><input id="m" inputmode="numeric" value=${min} onInput=${(e) => setMin(e.target.value)} /></div>
+      <div class="campo"><label for="f">Día</label><input id="f" type="date" max=${hoyISO()} value=${fecha} onInput=${(e) => setFecha(e.target.value)} /></div>
+    </div>
+    <div class="campo"><label for="n">Notas (opcional)</label><input id="n" placeholder="Récord en sentadilla: 85 kg" value=${notas} onInput=${(e) => setNotas(e.target.value)} /></div>
+    ${err && html`<p class="err">${err}</p>`}
+    <button class="btn" onClick=${guardar}>Guardar</button>
+  </div>`;
+}
+
+// ======================= RESERVAS =======================
+async function misReservas(socioId) {
+  const { data } = await sb.from('reservas').select('id,estado,huecos(inicio,fin,servicio)').eq('socio_id', socioId).eq('estado', 'confirmada');
+  const { data: serv } = await sb.from('servicios').select('codigo,nombre');
+  return (data || []).filter((r) => r.huecos && new Date(r.huecos.inicio) > new Date())
+    .map((r) => ({ id: r.id, inicio: r.huecos.inicio, fin: r.huecos.fin, codigo: r.huecos.servicio, servicio: (serv || []).find((s) => s.codigo === r.huecos.servicio)?.nombre || r.huecos.servicio }))
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+function Reservas({ socio, avisar }) {
+  const [servicios, setServicios] = useState([]); const [srv, setSrv] = useState(null);
+  const [huecos, setHuecos] = useState(null); const [dia, setDia] = useState(null); const [sel, setSel] = useState(null);
+  const [mias, setMias] = useState([]); const [ocup, setOcup] = useState(false); const [err, setErr] = useState('');
+  useEffect(() => { sb.from('servicios').select('*').eq('activo', true).order('nombre').then(({ data }) => { setServicios(data || []); setSrv((data || [])[0]?.codigo || null); }); recargarMias(); }, []);
+  useEffect(() => { if (srv) cargarHuecos(); }, [srv]);
+  const recargarMias = () => misReservas(socio.id).then(setMias).catch(() => {});
+  const cargarHuecos = async () => {
+    setHuecos(null); setSel(null); setErr('');
+    const { data, error } = await sb.rpc('huecos_disponibles', { p_servicio: srv });
+    const xs = error ? [] : data; setHuecos(xs);
+    const primerLibre = xs.find((h) => h.libre); setDia(primerLibre ? primerLibre.inicio.slice(0, 10) : xs[0]?.inicio.slice(0, 10) || null);
+  };
+  const dias = [...new Set((huecos || []).map((h) => h.inicio.slice(0, 10)))];
+  const delDia = (huecos || []).filter((h) => h.inicio.slice(0, 10) === dia);
+  const s = servicios.find((x) => x.codigo === srv);
+  const puede = ['al_dia', 'vence_pronto'].includes(socio.sit);
+  const reservar = async () => {
+    setOcup(true); setErr('');
+    const { error } = await sb.rpc('reservar', { p_hueco: sel.id });
+    setOcup(false);
+    if (error) { setErr(msgError(error)); cargarHuecos(); return; }
+    avisar(s.nombre + ' reservada: ' + diaLargo(sel.inicio) + ', ' + hhmm(sel.inicio) + ' h'); recargarMias(); cargarHuecos();
+  };
+  const anular = async (r) => {
+    const { error } = await sb.rpc('cancelar_reserva', { p_reserva: r.id });
+    if (error) avisar(msgError(error)); else { avisar('Reserva anulada'); recargarMias(); cargarHuecos(); }
+  };
+  const idx = servicios.findIndex((x) => x.codigo === srv);
+  return html`<div class="pant">
+    <header style="padding-top:22px"><div><p class="eyebrow">Servicios del club</p><h1 class="serif">Reserva tu <span class="kw">HORA</span></h1></div></header>
+    ${mias.length > 0 && html`<div style="display:flex;flex-direction:column;gap:8px"><span class="lab">Tus reservas</span>
+      ${mias.map((r) => html`<div class="card oro" style="flex-direction:row;align-items:center;gap:12px"><div style="flex:1"><b>${r.servicio} · ${hhmm(r.inicio)} h</b><div class="muted" style="font-size:13px">${diaLargo(r.inicio)}</div></div>
+        <button class="btn2" onClick=${() => anular(r)}>Anular</button></div>`)}</div>`}
+    ${servicios.length === 0 ? html`<div class="vacio">Todavía no hay servicios para reservar.</div>` : html`
+      ${servicios.length > 1 && html`<div class="seg" role="group" aria-label="Servicio"><span class="ind" style=${'width:calc((100% - 8px)/' + servicios.length + ');transform:translateX(' + idx * 100 + '%)'}></span>
+        ${servicios.map((x) => html`<button aria-pressed=${x.codigo === srv ? 'true' : 'false'} onClick=${() => setSrv(x.codigo)}>${x.nombre}</button>`)}</div>`}
+      ${s && html`<p class="muted" style="margin:-4px 0 0;font-size:13.5px">${s.descripcion || ''} · ${s.duracion_min} min</p>`}
+      ${huecos === null ? html`<p class="faint">Buscando horas…</p>` : huecos.length === 0 ? html`<div class="vacio">No hay horas abiertas para ${s?.nombre?.toLowerCase()} ahora mismo. El club las publica cada semana; vuelve a mirar en unos días.</div>` : html`
+        <div><span class="lab">Elige día</span><div class="dias" style="margin-top:8px">${dias.map((d) => { const f = new Date(d + 'T12:00:00'); return html`
+          <button class="dia" aria-pressed=${d === dia ? 'true' : 'false'} onClick=${() => { setDia(d); setSel(null); }} aria-label=${diaLargo(d + 'T12:00:00')}><span>${SEM[f.getDay()]}</span><b>${f.getDate()}</b><span>${MES[f.getMonth()]}</span></button>`; })}</div></div>
+        <div><span class="lab">Elige hora</span><div class="horas" style="margin-top:8px">${delDia.map((h) => html`
+          <button class="hora num" disabled=${!h.libre && !h.mio} aria-pressed=${sel?.id === h.id || h.mio ? 'true' : 'false'} onClick=${() => !h.mio && setSel(h)}>${hhmm(h.inicio)}${h.mio ? ' ✓' : ''}</button>`)}</div>
+          <p class="faint" style="font-size:12.5px;margin:8px 0 0">Las horas tachadas ya están cogidas.</p></div>
+        ${err && html`<p class="err">${err}</p>`}
+        ${!puede && html`<p class="err">Para reservar, tu cuota tiene que estar al día.</p>`}
+        <button class="btn" disabled=${!sel || ocup || !puede} onClick=${reservar}>${sel ? 'Reservar ' + SEM[new Date(sel.inicio).getDay()].toLowerCase() + ' ' + new Date(sel.inicio).getDate() + ' a las ' + hhmm(sel.inicio) : 'Elige una hora'}</button>`}`}
+  </div>`;
+}
+
+// ======================= CLUB =======================
+function Club({ marcarLeidos }) {
+  const [avisos, setAvisos] = useState(null);
+  useEffect(() => {
+    sb.from('avisos').select('*').eq('publicado', true).order('destacado', { ascending: false }).order('creado', { ascending: false }).limit(30)
+      .then(({ data }) => { setAvisos(data || []); marcarLeidos(data || []); });
+  }, []);
+  return html`<div class="pant">
+    <header style="padding-top:22px"><div><p class="eyebrow">Novedades</p><h1 class="serif">Pasa en el <span class="kw">CLUB</span></h1></div></header>
+    ${avisos === null ? html`<p class="faint">Cargando…</p>` : avisos.length === 0 ? html`<div class="vacio">No hay comunicados ahora mismo.</div>` :
+      avisos.map((a) => html`<article class=${'aviso' + (a.destacado ? ' dest' : '')}>
+        ${a.destacado && html`<span class="lab" style="color:var(--gold)">Destacado</span>`}
+        <b>${a.titulo}</b>${a.texto && html`<p>${a.texto}</p>`}<span class="faint" style="font-size:12px">${new Date(a.creado).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span></article>`)}
+    <div class="card"><span class="lab">El club</span>
+      <div class="lista">
+        <a class="it" href=${MAPA} target="_blank" rel="noopener" style="color:var(--ink);text-decoration:none"><span style="color:var(--gold)">${ICON.pin}</span><span class="q"><b>Carrer d’Anselm Turmeda 15</b><small>Sabadell · abierto 24 h</small></span>${ICON.flecha}</a>
+        <a class="it" href=${WHATSAPP} target="_blank" rel="noopener" style="color:var(--ink);text-decoration:none"><span style="color:var(--gold)">${ICON.wa}</span><span class="q"><b>WhatsApp del club</b><small class="num">610 84 79 10</small></span>${ICON.flecha}</a>
+        <div class="it"><span class="q"><b>Horario del personal</b><small>L–V de 9 a 13:30 y de 16 a 20 · S de 9 a 13</small></span></div>
+      </div></div>
+  </div>`;
+}
+
+// ======================= CUOTA =======================
+function Cuota({ socio, salir }) {
+  const [etiqueta, color] = SIT[socio.sit] || ['', 'var(--muted)'];
+  const dias = socio.hasta ? Math.round((new Date(socio.hasta + 'T12:00:00') - new Date(hoyISO() + 'T12:00:00')) / 864e5) : null;
+  const [clave, setClave] = useState(false);
+  return html`<div class="pant">
+    <header style="padding-top:22px"><div><p class="eyebrow num">Socio nº ${socio.num}</p><h1 class="serif">Mi <span class="kw">CUOTA</span></h1></div></header>
+    <div class="card oro" style="gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="lab">Tarifa</span><div class="kw" style="font-size:28px;color:var(--ink);line-height:1.1">${(socio.tarifa || 'Sin tarifa').toUpperCase()}</div></div>
+        <span class="pill" style=${'--c:' + color + ';padding:6px 10px;border-radius:999px;background:rgba(232,208,112,.1)'}>${etiqueta}</span></div>
+      <div class="fila"><div><span class="lab">Pagado hasta</span><div class="num" style="font-weight:700;font-size:16px">${fmt(socio.hasta)}</div></div>
+        <div><span class="lab">${dias !== null && dias >= 0 ? 'Quedan' : 'Estado'}</span><div class="num" style="font-weight:700;font-size:16px">${dias === null ? '—' : dias >= 0 ? dias + ' días' : 'Vencida'}</div></div></div>
+    </div>
+    ${socio.debe > 0 && html`<div class="card" style="border-color:rgba(226,128,111,.4)"><span class="lab" style="color:var(--bad)">Pago pendiente</span><b class="num">${eur(socio.debe)}</b><span class="muted" style="font-size:13px">Pásate por recepción o escríbenos para regularizarlo.</span></div>`}
+    <div><h2 style="margin-bottom:6px">Tus periodos</h2><div class="lista">
+      ${socio.periodos.length === 0 ? html`<p class="faint">Sin periodos registrados.</p>` : socio.periodos.slice(0, 8).map((p) => html`<div class="it"><div class="q"><b>${p.nombre}</b><small class="num">${fmt(p.desde)} → ${fmt(p.hasta)}</small></div></div>`)}
+    </div></div>
+    <div class="card"><span class="lab">Tus datos</span>
+      <div class="lista"><div class="it"><span class="q"><b>${socio.nombre}</b><small>${socio.email || ''}${socio.movil ? ' · ' + socio.movil : ''}</small></span></div>
+        <div class="it"><span class="q"><small>Socio desde el ${fmt(socio.alta)}. Si algún dato no es correcto, avísanos en recepción.</small></span></div></div></div>
+    <a class="card" href=${WHATSAPP} target="_blank" rel="noopener" style="flex-direction:row;align-items:center;gap:14px;color:var(--ink);text-decoration:none"><span style="color:var(--gold)">${ICON.wa}</span>
+      <span style="flex:1"><b>¿Dudas con tu cuota?</b><br /><span class="muted" style="font-size:13px">Escríbenos por WhatsApp</span></span>${ICON.flecha}</a>
+    <div style="display:flex;gap:10px"><button class="btn2" style="flex:1" onClick=${() => setClave(true)}>Poner contraseña</button><button class="btn2" style="flex:1" onClick=${salir}>Cerrar sesión</button></div>
+    <p class="nota">Actualizado ${new Date(socio.actualizado).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+    ${clave && html`<${HojaClave} cerrar=${() => setClave(false)} />`}
+  </div>`;
+}
+function HojaClave({ cerrar }) {
+  const [a, setA] = useState(''); const [err, setErr] = useState(''); const [ok, setOk] = useState(false);
+  const guardar = async () => { if (a.length < 8) return setErr('Usa al menos 8 caracteres.');
+    const { error } = await sb.auth.updateUser({ password: a }); if (error) setErr('No se ha podido guardar.'); else setOk(true); };
+  return html`<div class="velo" onClick=${cerrar}></div><div class="hoja" role="dialog" aria-label="Poner contraseña"><span class="asa"></span>
+    <h2 class="serif" style="font-size:28px;font-weight:400">Tu <span class="kw">CONTRASEÑA</span></h2>
+    ${ok ? html`<p>Guardada. La próxima vez puedes entrar con tu correo y esta contraseña.</p><button class="btn" onClick=${cerrar}>Hecho</button>` : html`
+      <p class="muted" style="margin:0">Así podrás entrar sin esperar el código por correo.</p>
+      <div class="campo"><label for="np">Nueva contraseña</label><input id="np" type="password" autocomplete="new-password" value=${a} onInput=${(e) => setA(e.target.value)} /></div>
+      ${err && html`<p class="err">${err}</p>`}<button class="btn" onClick=${guardar}>Guardar</button>`}
+  </div>`;
+}
+
+// ======================= APP =======================
+function App() {
+  const [socio, setSocio] = useState(leerLS(GUARDADO)); const [estado, setEstado] = useState('cargando');
+  const [tab, setTab] = useState('acceso'); const [toast, setToast] = useState(null); const [nuevos, setNuevos] = useState(false);
+  const avisar = (t) => { setToast(t); clearTimeout(window.__t); window.__t = setTimeout(() => setToast(null), 2600); };
+  const refrescar = async () => {
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { setEstado(socio ? 'listo' : 'login'); return; }
+    try { const s = await cargarSocio(); if (s) { setSocio(s); setEstado('listo'); } else setEstado('sinficha'); }
+    catch { setEstado(socio ? 'listo' : 'login'); }
+  };
+  useEffect(() => {
+    refrescar();
+    sb.from('avisos').select('id').eq('publicado', true).then(({ data }) => { const vistos = leerLS('theclub-avisos-vistos') || []; setNuevos((data || []).some((a) => !vistos.includes(a.id))); });
+    const vis = () => document.visibilityState === 'visible' && refrescar();
+    document.addEventListener('visibilitychange', vis); return () => document.removeEventListener('visibilitychange', vis);
+  }, []);
+  const salir = async () => { await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setEstado('login'); setTab('acceso'); };
+  const marcarLeidos = (xs) => { guardarLS('theclub-avisos-vistos', xs.map((a) => a.id)); setNuevos(false); };
+
+  if (estado === 'cargando' && !socio) return html`<div class="shell"><div class="pant"><header><img src="logo.svg" alt="The Club Fitness" /></header><p class="nota">Cargando…</p></div></div>`;
+  if (estado === 'login' && !socio) return html`<${Login} onOk=${refrescar} />`;
+  if (estado === 'sinficha') return html`<div class="shell"><div class="pant"><header><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn" onClick=${salir}>Salir</button></header>
+    <h1 class="serif">No encontramos <span class="kw">TU FICHA</span></h1><p class="muted">Este correo no consta como socio del club. Pásate por recepción o escríbenos para revisarlo.</p>
+    <a class="btn2" href=${WHATSAPP} target="_blank" rel="noopener" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;color:var(--gold)">${ICON.wa} Escribir al club</a></div></div>`;
+
+  const TABS = [['acceso', 'Acceso'], ['entrenar', 'Entrenar'], ['reservas', 'Reservas'], ['club', 'Club'], ['cuota', 'Cuota']];
+  const ti = TABS.findIndex((t) => t[0] === tab);
+  return html`<div class="shell">
+    ${tab === 'acceso' && html`<${Acceso} key="a" socio=${socio} ir=${setTab} />`}
+    ${tab === 'entrenar' && html`<${Entrenar} key="e" socio=${socio} avisar=${avisar} />`}
+    ${tab === 'reservas' && html`<${Reservas} key="r" socio=${socio} avisar=${avisar} />`}
+    ${tab === 'club' && html`<${Club} key="c" marcarLeidos=${marcarLeidos} />`}
+    ${tab === 'cuota' && html`<${Cuota} key="q" socio=${socio} salir=${salir} />`}
+    <nav class="tabs" aria-label="Secciones"><span class="ind" style=${'transform:translateX(' + ti * 100 + '%)'}><i></i></span>
+      ${TABS.map(([k, n]) => html`<button aria-current=${tab === k ? 'page' : undefined} onClick=${() => setTab(k)}>${ICON[k]}${n}${k === 'club' && nuevos ? html`<span class="dot" aria-label="Novedades"></span>` : ''}</button>`)}</nav>
+    ${toast && html`<div class="toast" role="status">${toast}</div>`}
+  </div>`;
+}
+
+render(html`<${App} />`, document.getElementById('app'));
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
