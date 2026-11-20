@@ -1,6 +1,6 @@
 // Guarda la app en el móvil para que se abra (y enseñe el QR) aunque no haya cobertura.
 // Los datos del socio no pasan por aquí: los pide la app a Supabase y guarda solo los suyos en el teléfono.
-const VERSION = 'theclub-app-v2';
+const VERSION = 'theclub-app-v5';
 const BASE = ['./', 'index.html', 'qr.js', 'config.js', 'logo.svg', 'isotipo.svg', 'manifest.webmanifest', 'icono-180.png', 'icono-192.png', 'icono-512.png'];
 const EXTERNOS = [
   'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',

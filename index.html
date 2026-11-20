@@ -12,12 +12,17 @@
 <link rel="icon" href="isotipo.svg">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icono-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://ftgvedpyyfdtbwzdwoab.supabase.co">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,700..800&family=Instrument+Serif:ital@1&family=Inter+Tight:wght@400;500;600;700;800&display=swap">
 <style>
 :root{--bg:#0A0900;--card:#15130C;--raise:#1D1A10;--ink:#F6F3EC;--muted:#B9B2A1;--faint:#7E786A;--gold:#E8D070;--line:rgba(246,243,236,.08);--line2:rgba(246,243,236,.15);
   --ok:#86C9A0;--bad:#E2806F;--gold-grad:linear-gradient(118deg,#9E8030 0%,#E8D070 38%,#F7ECB0 56%,#C3AD5B 100%);color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overscroll-behavior:none}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+button,a,.chip,.dia,.hora{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+img,svg{-webkit-user-drag:none;-webkit-touch-callout:none}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -31,19 +36,26 @@ h1{margin:6px 0 0;font-size:42px;line-height:1}
 h2{margin:0;font-size:15px;font-weight:700}
 .muted{color:var(--muted)}.faint{color:var(--faint)}
 
-.shell{max-width:460px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
-.pant{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(14px + env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) 28px max(22px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:16px;position:relative;animation:in .3s cubic-bezier(.2,.8,.2,1) both}
-.pant::-webkit-scrollbar{display:none}
-.glow::before{content:"";position:absolute;left:-120px;top:-160px;width:420px;height:420px;border-radius:50%;background:radial-gradient(closest-side,rgba(232,208,112,.13),rgba(232,208,112,0));pointer-events:none}
+.shell{position:fixed;inset:0;max-width:460px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.shell::before{content:"";position:absolute;left:-140px;top:-180px;width:440px;height:440px;border-radius:50%;background:radial-gradient(closest-side,rgba(232,208,112,.12),rgba(232,208,112,0));pointer-events:none;z-index:0}
+.top{flex:none;position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;height:calc(62px + env(safe-area-inset-top));padding:env(safe-area-inset-top) max(22px,env(safe-area-inset-right)) 0 max(22px,env(safe-area-inset-left))}
+.top img{height:36px;display:block}
+.panes{flex:1;min-height:0;position:relative}
+.pane{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scrollbar-width:none;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s}
+.pane.on{opacity:1;visibility:visible;transition:opacity .2s ease}
+.pane::-webkit-scrollbar{display:none}
+.pant{padding:4px max(22px,env(safe-area-inset-right)) 28px max(22px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:16px;position:relative}
+.shell > .pant{flex:1;overflow-y:auto;z-index:1;padding-top:calc(20px + env(safe-area-inset-top))}
+.fila .card{min-height:100px}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes up{from{transform:translateY(100%)}to{transform:none}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-header{display:flex;align-items:center;justify-content:space-between;position:relative;padding-top:18px}
-header img{height:40px}
+header{display:block;padding:0}
+header img{height:40px;display:block}
 .chipbtn{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:13px;font-weight:600}
 
-nav.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(10,9,0,.97);position:relative}
+nav.tabs{flex:none;z-index:3;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(10,9,0,.97);position:relative}
 nav.tabs .ind{position:absolute;top:-1px;left:8px;width:calc((100% - 16px)/5);height:2px;display:flex;justify-content:center;transition:transform .38s cubic-bezier(.2,.8,.2,1)}
 nav.tabs .ind i{width:28px;height:2px;border-radius:2px;background:var(--gold)}
 nav.tabs button{min-height:52px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted);transition:color .2s;position:relative}
@@ -108,15 +120,53 @@ nav.tabs .dot{position:absolute;top:6px;left:calc(50% + 7px);width:8px;height:8p
 .full svg{width:min(320px,82vw);height:auto}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:50;max-width:340px;width:max-content;padding:12px 16px;border-radius:14px;background:var(--ink);color:#0A0900;font-weight:700;font-size:14px;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:fade .2s both}
 .vacio{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:20px;font-size:14px}
+
+/* ---------- intro de apertura ---------- */
+#intro{position:fixed;inset:0;z-index:100;background:#050400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;overflow:hidden;cursor:pointer}
+#intro .halo{position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(closest-side,rgba(232,208,112,.22),rgba(232,208,112,.06) 55%,rgba(232,208,112,0));opacity:0;animation:iHalo 2.2s cubic-bezier(.2,.8,.2,1) .1s both}
+#intro .rayo{position:absolute;inset:-40%;background:conic-gradient(from 200deg at 50% 50%,rgba(232,208,112,0) 0deg,rgba(232,208,112,.07) 40deg,rgba(232,208,112,0) 80deg);animation:iGiro 3.2s linear both;opacity:.9}
+#intro .iso{position:relative;width:118px;height:135px;-webkit-mask:url(isotipo.svg) center/contain no-repeat;mask:url(isotipo.svg) center/contain no-repeat;
+  background:linear-gradient(115deg,#7A5E1E 0%,#C9A858 30%,#FFF6CF 46%,#E8D070 52%,#B98E31 70%,#7A5E1E 100%);background-size:260% 100%;
+  animation:iIso .9s cubic-bezier(.16,1,.3,1) .15s both,iBrillo 1.5s cubic-bezier(.4,0,.2,1) .55s both;filter:drop-shadow(0 0 18px rgba(232,208,112,.25))}
+#intro .marca{display:flex;flex-direction:column;align-items:center;gap:14px}
+#intro .marca img{height:58px;opacity:0;animation:iSube .8s cubic-bezier(.16,1,.3,1) .7s both}
+#intro .linea{height:1px;width:0;background:linear-gradient(90deg,rgba(232,208,112,0),#E8D070,rgba(232,208,112,0));animation:iLinea .9s cubic-bezier(.16,1,.3,1) .95s both}
+#intro .lema{font:600 11px 'Inter Tight',system-ui,sans-serif;letter-spacing:.42em;color:rgba(246,236,190,.75);text-transform:uppercase;opacity:0;animation:iLema .8s ease 1.15s both;padding-left:.42em}
+#intro.fuera{animation:iFuera .55s cubic-bezier(.4,0,.2,1) both;pointer-events:none}
+@keyframes iHalo{0%{opacity:0;transform:scale(.6)}60%{opacity:1}100%{opacity:.85;transform:scale(1)}}
+@keyframes iGiro{from{transform:rotate(0)}to{transform:rotate(160deg)}}
+@keyframes iIso{from{opacity:0;transform:scale(.72) rotate(-30deg);filter:blur(8px)}to{opacity:1;transform:none;filter:drop-shadow(0 0 18px rgba(232,208,112,.25))}}
+@keyframes iBrillo{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes iSube{from{opacity:0;transform:translateY(14px);letter-spacing:.2em}to{opacity:1;transform:none}}
+@keyframes iLinea{to{width:180px}}
+@keyframes iLema{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes iFuera{to{opacity:0;transform:scale(1.06);filter:blur(6px)}}
+@media (prefers-reduced-motion:reduce){#intro *{animation-duration:.01s!important;animation-delay:0s!important}#intro .linea{width:180px}}
 </style>
 </head>
 <body>
+<div id="intro" role="presentation" aria-hidden="true">
+  <div class="rayo"></div><div class="halo"></div>
+  <div class="iso"></div>
+  <div class="marca"><img src="logo.svg" alt="" /><div class="linea"></div><div class="lema">Acceso 24 h · Sabadell</div></div>
+</div>
+<script>
+// Intro: se ve al abrir la app (una vez por apertura), mínimo 1,9 s o hasta que la app esté lista; se salta tocando.
+(function () {
+  var el = document.getElementById('intro'), t0 = Date.now(), hecho = false;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function cerrar() { if (hecho) return; hecho = true; el.classList.add('fuera'); setTimeout(function () { el.remove(); }, 560); }
+  window.__introFin = function () { var falta = (reduce ? 500 : 1900) - (Date.now() - t0); setTimeout(cerrar, Math.max(0, falta)); };
+  el.addEventListener('click', cerrar);
+  setTimeout(cerrar, 4500);   // por si la app tarda: nunca se queda atascada
+})();
+</script>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script type="module">
-import { html, render, useState, useEffect, useCallback } from 'https://unpkg.com/htm@3.1.1/preact/standalone.module.js';
+import { html, render, useState, useEffect, useCallback, useMemo } from 'https://unpkg.com/htm@3.1.1/preact/standalone.module.js';
 import { codigoQR } from './qr.js';
 
 const sb = window.supabase.createClient(window.THECLUB.url, window.THECLUB.anonKey);
@@ -193,7 +243,7 @@ function Login({ onOk }) {
   const conClave = (e) => { e.preventDefault(); run(async () => {
     const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: pass });
     if (error) setErr('Correo o contraseña incorrectos.'); else onOk(); }); };
-  return html`<div class="shell"><div class="pant glow">
+  return html`<div class="shell"><div class="pant">
     <header><img src="logo.svg" alt="The Club Fitness" /></header>
     <div><p class="eyebrow">Acceso 24 h</p><h1 class="serif">Hola, <span class="kw">SOCIO</span></h1></div>
     <p class="muted" style="margin:0">Entra con el correo que diste al apuntarte en el club.</p>
@@ -218,10 +268,10 @@ function Login({ onOk }) {
 }
 
 // ======================= ACCESO =======================
-function Acceso({ socio, ir }) {
+function Acceso({ socio, ir, activo }) {
   const [ahora, setAhora] = useState(Date.now()); const [grande, setGrande] = useState(false);
   const [aforo, setAforo] = useState(null); const [entradas, setEntradas] = useState([]); const [reservas, setReservas] = useState([]);
-  useEffect(() => { const id = setInterval(() => setAhora(Date.now()), 1000); return () => clearInterval(id); }, []);
+  useEffect(() => { if (!activo) return; setAhora(Date.now()); const id = setInterval(() => setAhora(Date.now()), 1000); return () => clearInterval(id); }, [activo]);
   useEffect(() => {
     sb.rpc('aforo_actual').then(({ data }) => data && setAforo(data)).catch(() => {});
     sb.from('accesos').select('cuando,resultado').eq('socio_id', socio.id).eq('resultado', 'ok').neq('lector', 'simulador').order('cuando', { ascending: false }).limit(3).then(({ data }) => setEntradas(data || []));
@@ -233,15 +283,14 @@ function Acceso({ socio, ir }) {
     return () => lock?.release?.();
   }, [grande]);
   const { texto, segundosRestantes } = codigoQR(socio.clave, socio.num, ahora);
-  const qr = svgQR(texto);
+  const qr = useMemo(() => svgQR(texto), [texto]);
   const [etiqueta, color] = SIT[socio.sit] || ['', 'var(--muted)'];
   const puede = ['al_dia', 'vence_pronto'].includes(socio.sit);
-  return html`<div class="pant glow">
-    <header><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn" onClick=${() => ir('cuota')}>Nº ${socio.num}</button></header>
+  return html`<div class="pant">
     <div><p class="eyebrow">Acceso 24 h</p><h1 class="serif">Hola, <span class="kw">${(socio.nombre || '').split(' ')[0].toUpperCase()}</span></h1></div>
     ${puede ? html`<button class="qr" onClick=${() => setGrande(true)} aria-label="Ampliar el código QR">
         <span dangerouslySetInnerHTML=${{ __html: qr }}></span>
-        <span class="barra"><i style=${'width:' + Math.round(segundosRestantes / 30 * 100) + '%'}></i></span>
+        <span class="barra"><i style=${'width:' + Math.round(segundosRestantes / 30 * 100) + '%;transition:' + (segundosRestantes >= 29 ? 'none' : 'width 1s linear')}></i></span>
         <span class="qrpie"><span>Toca para ampliar</span><span class="num">Nuevo código en 0:${String(segundosRestantes).padStart(2, '0')}</span></span>
       </button>` : html`<div class="bloq"><p class="serif" style="font-size:28px;margin:0">Tu acceso está en pausa</p>
         <p style="margin:0;color:var(--muted);font-size:14px">${socio.sit === 'impago' ? 'Tienes un pago pendiente.' : socio.sit === 'vencido' ? 'Tu cuota ha vencido.' : 'Tu cuota no está activa.'} Pásate por recepción o escríbenos por WhatsApp.</p>
@@ -288,7 +337,7 @@ function Entrenar({ socio, avisar }) {
   const borrar = async (e) => { await sb.from('entrenos').delete().eq('id', e.id); avisar('Entreno borrado'); cargar(); };
   const faltan = Math.max(0, RETO - diasMes);
   return html`<div class="pant">
-    <header style="padding-top:22px"><div><p class="eyebrow">${MES[new Date().getMonth()]} · tus entrenos</p><h1 class="serif">A <span class="kw">ENTRENAR</span></h1></div></header>
+    <header><div><p class="eyebrow">${MES[new Date().getMonth()]} · tus entrenos</p><h1 class="serif">A <span class="kw">ENTRENAR</span></h1></div></header>
     <div class="card oro">
       <div style="display:flex;justify-content:space-between;align-items:baseline"><span><span class="lab">Reto del mes</span><br /><b>${RETO} días entrenando</b></span><span class="kw num" style="font-size:28px">${diasMes}/${RETO}</span></div>
       <div class="reto" aria-hidden="true">${Array.from({ length: RETO }, (_, i) => html`<i class=${i < diasMes ? 'on' : ''}></i>`)}</div>
@@ -335,12 +384,13 @@ async function misReservas(socioId) {
     .map((r) => ({ id: r.id, inicio: r.huecos.inicio, fin: r.huecos.fin, codigo: r.huecos.servicio, servicio: (serv || []).find((s) => s.codigo === r.huecos.servicio)?.nombre || r.huecos.servicio }))
     .sort((a, b) => a.inicio.localeCompare(b.inicio));
 }
-function Reservas({ socio, avisar }) {
+function Reservas({ socio, avisar, activo }) {
   const [servicios, setServicios] = useState([]); const [srv, setSrv] = useState(null);
   const [huecos, setHuecos] = useState(null); const [dia, setDia] = useState(null); const [sel, setSel] = useState(null);
   const [mias, setMias] = useState([]); const [ocup, setOcup] = useState(false); const [err, setErr] = useState('');
   useEffect(() => { sb.from('servicios').select('*').eq('activo', true).order('nombre').then(({ data }) => { setServicios(data || []); setSrv((data || [])[0]?.codigo || null); }); recargarMias(); }, []);
   useEffect(() => { if (srv) cargarHuecos(); }, [srv]);
+  useEffect(() => { if (activo && srv) { recargarMias(); cargarHuecos(); } }, [activo]);
   const recargarMias = () => misReservas(socio.id).then(setMias).catch(() => {});
   const cargarHuecos = async () => {
     setHuecos(null); setSel(null); setErr('');
@@ -365,7 +415,7 @@ function Reservas({ socio, avisar }) {
   };
   const idx = servicios.findIndex((x) => x.codigo === srv);
   return html`<div class="pant">
-    <header style="padding-top:22px"><div><p class="eyebrow">Servicios del club</p><h1 class="serif">Reserva tu <span class="kw">HORA</span></h1></div></header>
+    <header><div><p class="eyebrow">Servicios del club</p><h1 class="serif">Reserva tu <span class="kw">HORA</span></h1></div></header>
     ${mias.length > 0 && html`<div style="display:flex;flex-direction:column;gap:8px"><span class="lab">Tus reservas</span>
       ${mias.map((r) => html`<div class="card oro" style="flex-direction:row;align-items:center;gap:12px"><div style="flex:1"><b>${r.servicio} · ${hhmm(r.inicio)} h</b><div class="muted" style="font-size:13px">${diaLargo(r.inicio)}</div></div>
         <button class="btn2" onClick=${() => anular(r)}>Anular</button></div>`)}</div>`}
@@ -393,7 +443,7 @@ function Club({ marcarLeidos }) {
       .then(({ data }) => { setAvisos(data || []); marcarLeidos(data || []); });
   }, []);
   return html`<div class="pant">
-    <header style="padding-top:22px"><div><p class="eyebrow">Novedades</p><h1 class="serif">Pasa en el <span class="kw">CLUB</span></h1></div></header>
+    <header><div><p class="eyebrow">Novedades</p><h1 class="serif">Pasa en el <span class="kw">CLUB</span></h1></div></header>
     ${avisos === null ? html`<p class="faint">Cargando…</p>` : avisos.length === 0 ? html`<div class="vacio">No hay comunicados ahora mismo.</div>` :
       avisos.map((a) => html`<article class=${'aviso' + (a.destacado ? ' dest' : '')}>
         ${a.destacado && html`<span class="lab" style="color:var(--gold)">Destacado</span>`}
@@ -413,7 +463,7 @@ function Cuota({ socio, salir }) {
   const dias = socio.hasta ? Math.round((new Date(socio.hasta + 'T12:00:00') - new Date(hoyISO() + 'T12:00:00')) / 864e5) : null;
   const [clave, setClave] = useState(false);
   return html`<div class="pant">
-    <header style="padding-top:22px"><div><p class="eyebrow num">Socio nº ${socio.num}</p><h1 class="serif">Mi <span class="kw">CUOTA</span></h1></div></header>
+    <header><div><p class="eyebrow num">Socio nº ${socio.num}</p><h1 class="serif">Mi <span class="kw">CUOTA</span></h1></div></header>
     <div class="card oro" style="gap:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="lab">Tarifa</span><div class="kw" style="font-size:28px;color:var(--ink);line-height:1.1">${(socio.tarifa || 'Sin tarifa').toUpperCase()}</div></div>
         <span class="pill" style=${'--c:' + color + ';padding:6px 10px;border-radius:999px;background:rgba(232,208,112,.1)'}>${etiqueta}</span></div>
@@ -450,7 +500,8 @@ function HojaClave({ cerrar }) {
 // ======================= APP =======================
 function App() {
   const [socio, setSocio] = useState(leerLS(GUARDADO)); const [estado, setEstado] = useState('cargando');
-  const [tab, setTab] = useState('acceso'); const [toast, setToast] = useState(null); const [nuevos, setNuevos] = useState(false);
+  const [tab, setTab] = useState('acceso'); const [vistos, setVistos] = useState({ acceso: true });
+  const ir = (k) => { setVistos((v) => (v[k] ? v : { ...v, [k]: true })); setTab(k); }; const [toast, setToast] = useState(null); const [nuevos, setNuevos] = useState(false);
   const avisar = (t) => { setToast(t); clearTimeout(window.__t); window.__t = setTimeout(() => setToast(null), 2600); };
   const refrescar = async () => {
     const { data } = await sb.auth.getSession();
@@ -464,7 +515,7 @@ function App() {
     const vis = () => document.visibilityState === 'visible' && refrescar();
     document.addEventListener('visibilitychange', vis); return () => document.removeEventListener('visibilitychange', vis);
   }, []);
-  const salir = async () => { await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setEstado('login'); setTab('acceso'); };
+  const salir = async () => { await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setEstado('login'); setTab('acceso'); setVistos({ acceso: true }); };
   const marcarLeidos = (xs) => { guardarLS('theclub-avisos-vistos', xs.map((a) => a.id)); setNuevos(false); };
 
   if (estado === 'cargando' && !socio) return html`<div class="shell"><div class="pant"><header><img src="logo.svg" alt="The Club Fitness" /></header><p class="nota">Cargando…</p></div></div>`;
@@ -475,19 +526,24 @@ function App() {
 
   const TABS = [['acceso', 'Acceso'], ['entrenar', 'Entrenar'], ['reservas', 'Reservas'], ['club', 'Club'], ['cuota', 'Cuota']];
   const ti = TABS.findIndex((t) => t[0] === tab);
+  const PANT = {
+    acceso: () => html`<${Acceso} socio=${socio} ir=${ir} activo=${tab === 'acceso'} />`,
+    entrenar: () => html`<${Entrenar} socio=${socio} avisar=${avisar} />`,
+    reservas: () => html`<${Reservas} socio=${socio} avisar=${avisar} activo=${tab === 'reservas'} />`,
+    club: () => html`<${Club} marcarLeidos=${marcarLeidos} />`,
+    cuota: () => html`<${Cuota} socio=${socio} salir=${salir} />`
+  };
   return html`<div class="shell">
-    ${tab === 'acceso' && html`<${Acceso} key="a" socio=${socio} ir=${setTab} />`}
-    ${tab === 'entrenar' && html`<${Entrenar} key="e" socio=${socio} avisar=${avisar} />`}
-    ${tab === 'reservas' && html`<${Reservas} key="r" socio=${socio} avisar=${avisar} />`}
-    ${tab === 'club' && html`<${Club} key="c" marcarLeidos=${marcarLeidos} />`}
-    ${tab === 'cuota' && html`<${Cuota} key="q" socio=${socio} salir=${salir} />`}
+    <div class="top"><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn num" onClick=${() => ir('cuota')}>Nº ${socio.num}</button></div>
+    <main class="panes">${TABS.map(([k]) => vistos[k] && html`<section key=${k} class=${'pane' + (tab === k ? ' on' : '')} aria-hidden=${tab === k ? 'false' : 'true'}>${PANT[k]()}</section>`)}</main>
     <nav class="tabs" aria-label="Secciones"><span class="ind" style=${'transform:translateX(' + ti * 100 + '%)'}><i></i></span>
-      ${TABS.map(([k, n]) => html`<button aria-current=${tab === k ? 'page' : undefined} onClick=${() => setTab(k)}>${ICON[k]}${n}${k === 'club' && nuevos ? html`<span class="dot" aria-label="Novedades"></span>` : ''}</button>`)}</nav>
+      ${TABS.map(([k, n]) => html`<button aria-current=${tab === k ? 'page' : undefined} onClick=${() => ir(k)}>${ICON[k]}${n}${k === 'club' && nuevos ? html`<span class="dot" aria-label="Novedades"></span>` : ''}</button>`)}</nav>
     ${toast && html`<div class="toast" role="status">${toast}</div>`}
   </div>`;
 }
 
 render(html`<${App} />`, document.getElementById('app'));
+window.__introFin && window.__introFin();
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
