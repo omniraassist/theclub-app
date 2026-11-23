@@ -20,7 +20,7 @@
 :root{--bg:#0A0900;--card:#15130C;--raise:#1D1A10;--ink:#F6F3EC;--muted:#B9B2A1;--faint:#7E786A;--gold:#E8D070;--line:rgba(246,243,236,.08);--line2:rgba(246,243,236,.15);
   --ok:#86C9A0;--bad:#E2806F;--gold-grad:linear-gradient(118deg,#9E8030 0%,#E8D070 38%,#F7ECB0 56%,#C3AD5B 100%);color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+html,body{height:100%;height:var(--app-h,100%);overflow:hidden;overscroll-behavior:none}
 button,a,.chip,.dia,.hora{touch-action:manipulation;-webkit-user-select:none;user-select:none}
 img,svg{-webkit-user-drag:none;-webkit-touch-callout:none}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -153,7 +153,7 @@ nav.tabs .dot{position:absolute;top:6px;left:calc(50% + 7px);width:8px;height:8p
 <script>
 // iPhone con la app instalada: ocupar la pantalla física entera (iOS a veces deja un hueco abajo)
 (function(){var d=document.documentElement,sa=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
-function h(){var v=window.innerHeight;if(sa&&screen.height>v&&screen.height-v<120)v=screen.height;d.style.setProperty('--app-h',v+'px');}
+function h(){var v=window.innerHeight,p=innerWidth<innerHeight||screen.height>screen.width;if(sa)v=Math.max(v,p?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width));d.style.setProperty('--app-h',v+'px');}
 h();addEventListener('resize',h);addEventListener('orientationchange',function(){setTimeout(h,300)});})();
 // Intro: se ve al abrir la app (una vez por apertura), mínimo 1,9 s o hasta que la app esté lista; se salta tocando.
 (function () {
