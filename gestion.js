@@ -118,7 +118,7 @@ function Sesion({ x, sb, op }) {
   const editar = (c, msg) => op(sb.rpc('editar_sesion', { p_sesion: x.id, p_plazas: Number(f.plazas), p_monitor: f.monitor, p_cancelada: x.cancelada, p_motivo: x.motivo || '', ...c }), msg);
   const quitar = (r) => confirm('¿Quitar a ' + r.socios?.nombre + ' de la clase?') && op(sb.rpc('cancelar_clase', { p_reserva: r.id }), 'Quitado de la clase');
   return html`<div class="g">
-    ${x.cancelada && html`<p class="g-p" style="color:var(--bad)">Clase cancelada${x.motivo ? ': ' + x.motivo : ''}. Los apuntados lo ven en su app, pero no les llega ningún mensaje.</p>`}
+    ${x.cancelada && html`<p class="g-p" style="color:var(--bad)">Clase cancelada${x.motivo ? ': ' + x.motivo : ''}. Los apuntados lo ven en su app y reciben una notificación si las tienen activadas.</p>`}
     <div><span class="g-lab">Apuntados · ${conf.length} de ${x.plazas}</span>${conf.length === 0 && html`<p class="g-p">Nadie todavía.</p>`}
       ${conf.map((r) => html`<${Persona} key=${r.id} r=${r}>${pasada ? html`<button class="g-chip" aria-pressed=${r.asistio ? 'true' : 'false'} onClick=${() => op(sb.from('clase_reservas').update({ asistio: !r.asistio }).eq('id', r.id))}>${r.asistio ? 'Vino ✓' : 'Vino'}</button>` : html`<button class="g-b ch mal" onClick=${() => quitar(r)}>Quitar</button>`}</${Persona}>`)}</div>
     ${esp.length > 0 && html`<div><span class="g-lab">Lista de espera · ${esp.length}</span>${esp.map((r) => html`<${Persona} key=${r.id} r=${r}>${!pasada && html`<button class="g-b ch mal" onClick=${() => quitar(r)}>Quitar</button>`}</${Persona}>`)}</div>`}
@@ -213,12 +213,12 @@ function Cierres({ sb, haz, rehacer, avisar }) {
 
 // ---------- Avisos ----------
 function Avisos({ sb, haz, avisar }) {
-  const v = { titulo: '', texto: '', destacado: false, hasta: '' }; const [f, setF] = useState(v); const [l, setL] = useState([]);
-  const cargar = async () => { const { data } = await sb.from('avisos').select('*').order('creado', { ascending: false }).limit(30); setL(data || []); };
+  const v = { titulo: '', texto: '', destacado: false, hasta: '', notificar: false }; const [f, setF] = useState(v); const [l, setL] = useState([]); const [n, setN] = useState(null);
+  const cargar = async () => { const { data } = await sb.from('avisos').select('*').order('creado', { ascending: false }).limit(30); setL(data || []); sb.rpc('push_alcance').then((r) => setN(r.data ?? null)); };
   useEffect(() => { cargar(); }, []);
-  const publicar = async () => { if (!f.titulo.trim()) return avisar('Falta el título'); if (await haz(sb.from('avisos').insert({ titulo: f.titulo.trim(), texto: f.texto.trim() || null, destacado: f.destacado, hasta: f.hasta || null }), 'Publicado en la app') !== false) { setF(v); cargar(); } };
+  const publicar = async () => { if (!f.titulo.trim()) return avisar('Falta el título'); if (f.notificar && !confirm('Se enviará una notificación a ' + (n ?? 'todos los') + ' móviles y no se puede deshacer. ¿Enviar?')) return; if (await haz(sb.from('avisos').insert({ titulo: f.titulo.trim(), texto: f.texto.trim() || null, destacado: f.destacado, hasta: f.hasta || null, notificar: f.notificar }), 'Publicado en la app') !== false) { setF(v); cargar(); } };
   return html`<div class="g"><div class="g-card"><h2>Nuevo aviso</h2><${Campo} n="Título"><input value=${f.titulo} onInput=${(e) => setF({ ...f, titulo: e.target.value })} /></${Campo}><${Campo} n="Texto"><textarea rows="4" value=${f.texto} onInput=${(e) => setF({ ...f, texto: e.target.value })}></textarea></${Campo}><${Campo} n="Visible hasta (opcional)"><input type="date" value=${f.hasta} onInput=${(e) => setF({ ...f, hasta: e.target.value })} /></${Campo}>
-    <label class="g-chk"><input type="checkbox" checked=${f.destacado} onChange=${(e) => setF({ ...f, destacado: e.target.checked })} /> Destacado</label><button class="g-b oro" onClick=${publicar}>Publicar en la app</button></div>
+    <label class="g-chk"><input type="checkbox" checked=${f.destacado} onChange=${(e) => setF({ ...f, destacado: e.target.checked })} /> Destacado</label><label class="g-chk"><input type="checkbox" checked=${f.notificar} onChange=${(e) => setF({ ...f, notificar: e.target.checked })} /> Enviar notificación al móvil${n === null ? '' : ' (' + n + ')'}</label><button class="g-b oro" onClick=${publicar}>Publicar en la app</button></div>
     ${l.length > 0 && html`<div class="g-card"><div>${l.map((a) => html`<div class="g-it" key=${a.id}><span class="q"><b>${a.titulo}</b><small>${a.publicado ? 'Visible' : 'Oculto'}</small></span><button class="g-b ch" onClick=${async () => { await haz(sb.from('avisos').update({ publicado: !a.publicado }).eq('id', a.id)); cargar(); }}>${a.publicado ? 'Ocultar' : 'Mostrar'}</button></div>`)}</div></div>`}</div>`;
 }
 

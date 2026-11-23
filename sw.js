@@ -1,7 +1,7 @@
 // Guarda la app en el móvil para que se abra (y enseñe el QR) aunque no haya cobertura.
 // Los datos del socio no pasan por aquí: los pide la app a Supabase y guarda solo los suyos en el teléfono.
-const VERSION = 'theclub-app-v13';
-const BASE = ['./', 'index.html', 'qr.js', 'entreno.js', 'gestion.js', 'clases.js', 'config.js', 'logo.svg', 'isotipo.svg', 'manifest.webmanifest', 'icono-180.png', 'icono-192.png', 'icono-512.png'];
+const VERSION = 'theclub-app-v14';
+const BASE = ['./', 'index.html', 'qr.js', 'entreno.js', 'gestion.js', 'clases.js', 'notificaciones.js', 'config.js', 'logo.svg', 'isotipo.svg', 'manifest.webmanifest', 'icono-180.png', 'icono-192.png', 'icono-512.png'];
 const EXTERNOS = [
   'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
@@ -26,4 +26,17 @@ self.addEventListener('fetch', (e) => {
     }
     return r;
   }).catch(() => caches.match(e.request).then((r) => r || caches.match('index.html'))));
+});
+
+// Notificaciones
+self.addEventListener('push', (e) => {
+  let d = {}; try { d = e.data.json(); } catch {}
+  e.waitUntil(self.registration.showNotification(d.titulo || 'The Club Fitness', { body: d.texto || '', icon: 'icono-192.png', badge: 'icono-192.png', tag: 'tc-' + (d.id || Date.now()), data: { ir: d.destino || 'acceso' } }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close(); const ir = e.notification.data?.ir || 'acceso';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (cs) => {
+    const c = cs.find((x) => x.url.startsWith(self.registration.scope));
+    if (c) { await c.focus(); c.postMessage({ ir }); } else await self.clients.openWindow(self.registration.scope + '?ir=' + ir);
+  }));
 });

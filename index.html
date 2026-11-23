@@ -175,6 +175,7 @@ import { codigoQR } from './qr.js';
 import { Entrenar } from './entreno.js';
 import { Gestion } from './gestion.js';
 import { Clases, misClases } from './clases.js';
+import { Notificaciones, sincronizarPush, soltarPush } from './notificaciones.js';
 
 const sb = window.supabase.createClient(window.THECLUB.url, window.THECLUB.anonKey);
 const WHATSAPP = 'https://wa.me/34610847910';
@@ -275,7 +276,7 @@ function Login({ onOk }) {
 }
 
 // ======================= ACCESO =======================
-function Acceso({ socio, ir, activo }) {
+function Acceso({ socio, ir, activo, avisar }) {
   const [ahora, setAhora] = useState(Date.now()); const [grande, setGrande] = useState(false);
   const [aforo, setAforo] = useState(null); const [entradas, setEntradas] = useState([]); const [reservas, setReservas] = useState([]);
   useEffect(() => { if (!activo) return; setAhora(Date.now()); const id = setInterval(() => setAhora(Date.now()), 1000); return () => clearInterval(id); }, [activo]);
@@ -306,6 +307,7 @@ function Acceso({ socio, ir, activo }) {
       <span style="width:46px;height:46px;flex:none;border-radius:12px;background:var(--gold);color:#0A0900;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1">
         <span style="font-size:10px;font-weight:800;letter-spacing:.1em">${SEM[new Date(r.inicio).getDay()]}</span><span style="font:800 20px 'Bricolage Grotesque';font-stretch:80%">${new Date(r.inicio).getDate()}</span></span>
       <span style="flex:1"><span class="lab">Tu próxima reserva</span><br /><b>${r.servicio} · ${hhmm(r.inicio)} h</b>${r.nota && html`<br /><small class="muted">${r.nota}</small>`}</span><span style="color:var(--gold)">${ICON.flecha}</span></button>`)}
+    <${Notificaciones} sb=${sb} avisar=${avisar} compacto=${true} activo=${activo} />
     <div class="fila">
       <button class="card" onClick=${() => ir('cuota')} style="text-align:left;color:var(--ink)"><span class="lab">Tu cuota</span><b>${socio.tarifa || '—'}</b><span class="pill" style=${'--c:' + color}>${etiqueta}</span></button>
       ${aforo?.hay_datos ? html`<div class="card"><span class="lab">Aforo ahora</span><b>${aforo.dentro < 25 ? 'Tranquilo' : aforo.dentro < 60 ? 'Normal' : 'Lleno'}</b><span class="pill" style="--c:var(--muted)">${aforo.dentro} dentro</span></div>`
@@ -405,7 +407,7 @@ function Club({ marcarLeidos }) {
 }
 
 // ======================= CUOTA =======================
-function Cuota({ socio, salir }) {
+function Cuota({ socio, salir, avisar, activo }) {
   const [etiqueta, color] = SIT[socio.sit] || ['', 'var(--muted)'];
   const dias = socio.hasta ? Math.round((new Date(socio.hasta + 'T12:00:00') - new Date(hoyISO() + 'T12:00:00')) / 864e5) : null;
   const [clave, setClave] = useState(false);
@@ -426,8 +428,9 @@ function Cuota({ socio, salir }) {
         <div class="it"><span class="q"><small>Socio desde el ${fmt(socio.alta)}. Si algún dato no es correcto, avísanos en recepción.</small></span></div></div></div>
     <a class="card" href=${WHATSAPP} target="_blank" rel="noopener" style="flex-direction:row;align-items:center;gap:14px;color:var(--ink);text-decoration:none"><span style="color:var(--gold)">${ICON.wa}</span>
       <span style="flex:1"><b>¿Dudas con tu cuota?</b><br /><span class="muted" style="font-size:13px">Escríbenos por WhatsApp</span></span>${ICON.flecha}</a>
+    <${Notificaciones} sb=${sb} avisar=${avisar} activo=${activo} />
     <div style="display:flex;gap:10px"><button class="btn2" style="flex:1" onClick=${() => setClave(true)}>Poner contraseña</button><button class="btn2" style="flex:1" onClick=${salir}>Cerrar sesión</button></div>
-    <p class="faint" style="text-align:center;font-size:11px;margin:4px 0 0">Versión 13 · ${screen.height}/${window.innerHeight}/${document.documentElement.style.getPropertyValue('--app-h')}</p>
+    <p class="faint" style="text-align:center;font-size:11px;margin:4px 0 0">Versión 14 · ${screen.height}/${window.innerHeight}/${document.documentElement.style.getPropertyValue('--app-h')}</p>
     <p class="nota">Actualizado ${new Date(socio.actualizado).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
     ${clave && html`<${HojaClave} cerrar=${() => setClave(false)} />`}
   </div>`;
@@ -454,6 +457,7 @@ function App() {
   const refrescar = async () => {
     const { data } = await sb.auth.getSession();
     if (!data.session) { setEstado(socio ? 'listo' : 'login'); return; }
+    sincronizarPush(sb);
     sb.rpc('asegurar_agenda').then(() => {}, () => {});
     sb.from('staff').select('rol').eq('user_id', data.session.user.id).maybeSingle().then((r) => { if (!r.error) setStaff(r.data); }, () => {});
     try { const s = await cargarSocio(); if (s) { setSocio(s); setEstado('listo'); } else setEstado('sinficha'); }
@@ -465,7 +469,12 @@ function App() {
     const vis = () => document.visibilityState === 'visible' && refrescar();
     document.addEventListener('visibilitychange', vis); return () => document.removeEventListener('visibilitychange', vis);
   }, []);
-  const salir = async () => { await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setStaff(null); setEstado('login'); setTab('acceso'); setVistos({ acceso: true }); };
+  const salir = async () => { await soltarPush(sb); await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setStaff(null); setEstado('login'); setTab('acceso'); setVistos({ acceso: true }); };
+  useEffect(() => {   // al tocar una notificación, abrir su pestaña
+    const abrir = (d) => ['acceso', 'reservas', 'club', 'cuota'].includes(d) && ir(d);
+    abrir(new URLSearchParams(location.search).get('ir')); if (location.search) history.replaceState(null, '', location.pathname);
+    const m = (e) => e.data?.ir && abrir(e.data.ir); navigator.serviceWorker?.addEventListener('message', m); return () => navigator.serviceWorker?.removeEventListener('message', m);
+  }, []);
   const marcarLeidos = (xs) => { guardarLS('theclub-avisos-vistos', xs.map((a) => a.id)); setNuevos(false); };
 
   if (estado === 'cargando' && !socio) return html`<div class="shell"><div class="pant"><header><img src="logo.svg" alt="The Club Fitness" /></header><p class="nota">Cargando…</p></div></div>`;
@@ -479,12 +488,12 @@ function App() {
   const TABS = [['acceso', 'Acceso'], ['entrenar', 'Entrenar'], ['reservas', 'Reservas'], ['club', 'Club'], ['cuota', 'Cuota']];
   const ti = TABS.findIndex((t) => t[0] === tab);
   const PANT = {
-    acceso: () => html`<${Acceso} socio=${socio} ir=${ir} activo=${tab === 'acceso'} />`,
+    acceso: () => html`<${Acceso} socio=${socio} ir=${ir} avisar=${avisar} activo=${tab === 'acceso'} />`,
     entrenar: () => html`<${Entrenar} sb=${sb} socio=${socio} avisar=${avisar} activo=${tab === 'entrenar'} />`,
     reservas: () => html`<${Reservas} socio=${socio} avisar=${avisar} activo=${tab === 'reservas'} />`,
     club: () => html`<${Club} marcarLeidos=${marcarLeidos} />`,
     gestion: () => html`<${Gestion} sb=${sb} avisar=${avisar} admin=${staff?.rol === 'admin'} />`,
-    cuota: () => html`<${Cuota} socio=${socio} salir=${salir} />`
+    cuota: () => html`<${Cuota} socio=${socio} salir=${salir} avisar=${avisar} activo=${tab === 'cuota'} />`
   };
   return html`<div class="shell">
     <div class="top"><img src="logo.svg" alt="The Club Fitness" /><span style="display:flex;gap:8px">${staff && html`<button class="chipbtn" style=${tab === 'gestion' ? 'color:#0A0900;background:var(--gold);border-color:var(--gold)' : 'color:var(--gold);border-color:rgba(232,208,112,.45)'} onClick=${() => ir('gestion')}>Gestión</button>`}<button class="chipbtn num" onClick=${() => ir('cuota')}>Nº ${socio.num}</button></span></div>
