@@ -166,12 +166,12 @@ function SesionActiva({ s, set, M, catalogo, terminar, avisar, activo }) {
     <div class="fila" style="grid-template-columns:repeat(3,minmax(0,1fr))">
       ${[['Ejercicios', s.ejercicios.length], ['Series', series], ['Volumen', Math.round(vol) + ' kg']].map(([l, v]) => html`<div class="card" style="min-height:0;padding:12px 14px;gap:2px"><span class="lab">${l}</span><b class="num" style="font-size:18px">${v}</b></div>`)}
     </div>
-    ${s.ejercicios.length === 0 && html`<div class="vacio">Añade tu primer ejercicio o máquina.</div>`}
+    ${s.ejercicios.length === 0 && html`<div class="vacio">Añade tu primer ejercicio.</div>`}
     ${s.ejercicios.map((e, i) => html`<${Bloque} key=${i + e.nombre} e=${e} i=${i} M=${M} cat=${catalogo} abierto=${abierto === i} abrir=${() => setAbierto(abierto === i ? -1 : i)}
       anadir=${(peso, reps) => { const r = M.get(clave(e)); const esRec = !r || e1rm({ peso, reps }) > (r.rm?.v || 0) + 0.01; cambiar((c) => c.ejercicios[i].sets.push({ peso, reps })); if (esRec && peso > 0 && r) avisar('¡Récord en ' + e.nombre + '!'); }}
       borrarSerie=${(j) => cambiar((c) => c.ejercicios[i].sets.splice(j, 1))}
       quitar=${() => cambiar((c) => c.ejercicios.splice(i, 1))} />`)}
-    <button class="btn2" style="min-height:50px;border-style:dashed;color:var(--gold)" onClick=${() => setPicker(true)}>+ Añadir ejercicio o máquina</button>
+    <button class="btn2" style="min-height:50px;border-style:dashed;color:var(--gold)" onClick=${() => setPicker(true)}>+ Añadir ejercicio</button>
     <button class="btn" disabled=${!series} onClick=${terminar}>Terminar entreno</button>
     ${picker && html`<${Picker} catalogo=${catalogo} M=${M} elegir=${anadirEj} cerrar=${() => setPicker(false)} />`}
   </div>`;
@@ -218,13 +218,12 @@ function Picker({ catalogo, M, elegir, cerrar, multiple, elegidos = [] }) {
   const inp = useRef(); useEffect(() => { setTimeout(() => inp.current?.focus(), 350); }, []);
   return html`<div class="velo" onClick=${cerrar}></div><div class="hoja" role="dialog" aria-label="Elegir ejercicio" style="max-height:88%">
     <span class="asa" aria-hidden="true"></span>
-    <h2 class="serif" style="font-size:28px;font-weight:400">Elige <span class="kw">MÁQUINA</span> o ejercicio</h2>
-    <div class="campo"><input ref=${inp} type="search" placeholder="Buscar: prensa, polea, nº 12…" value=${q} onInput=${(e) => setQ(e.target.value)} aria-label="Buscar ejercicio" /></div>
-    <div class="dias" style="gap:6px">${['Máquinas', 'Peso libre'].map((x) => html`<button class="chip" style="flex:none" aria-pressed=${eq === x ? 'true' : 'false'} onClick=${() => setEq(eq === x ? null : x)}>${x}</button>`)}
-      ${GRUPOS.map((x) => html`<button class="chip" style="flex:none" aria-pressed=${g === x ? 'true' : 'false'} onClick=${() => setG(g === x ? null : x)}>${x}</button>`)}</div>
+    <h2 class="serif" style="font-size:28px;font-weight:400">Elige <span class="kw">EJERCICIO</span></h2>
+    <div class="campo"><input ref=${inp} type="search" placeholder="Buscar: press, sentadilla, curl…" value=${q} onInput=${(e) => setQ(e.target.value)} aria-label="Buscar ejercicio" /></div>
+    <div class="dias" style="gap:6px">${GRUPOS.map((x) => html`<button class="chip" style="flex:none" aria-pressed=${g === x ? 'true' : 'false'} onClick=${() => setG(g === x ? null : x)}>${x}</button>`)}</div>
     <div class="lista">
       ${propio && html`<button class="it" style="border:0;background:transparent;color:inherit;text-align:left" onClick=${() => elegir({ id: null, nombre: q.trim() })}><span class="q"><b>Añadir «${q.trim()}»</b><small>Ejercicio propio, solo para ti</small></span><span style="color:var(--gold);font-size:22px">+</span></button>`}
-      ${lista.length === 0 && !propio ? html`<p class="faint">${catalogo.length ? 'Nada con ese filtro.' : 'El club aún no ha cargado sus máquinas. Escribe el nombre para añadirlo.'}</p>` :
+      ${lista.length === 0 && !propio ? html`<p class="faint">${catalogo.length ? 'Nada con ese filtro.' : 'Escribe el nombre para añadirlo.'}</p>` :
         lista.slice(0, 120).map((c) => { const ya = elegidos.includes(c.id); return html`<button class="it" style="border-left:0;border-right:0;border-bottom:0;background:transparent;color:inherit;text-align:left;width:100%" onClick=${() => elegir(c)}>
           <span class="q"><b>${c.nombre}</b><small>${[c.grupo, c.equipo, c.maquina_num && 'nº ' + c.maquina_num, c.zona].filter(Boolean).join(' · ')}${M.get(c.id)?.rm ? ' · 1RM ' + fmt(Math.round(M.get(c.id).rm.v)) + ' kg' : ''}</small></span>
           <span style=${'font-size:20px;color:' + (ya ? 'var(--gold)' : 'var(--faint)')}>${multiple ? (ya ? '✓' : '+') : '›'}</span></button>`; })}
