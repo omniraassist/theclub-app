@@ -4,6 +4,8 @@ import { html, useState, useEffect, useMemo, useRef } from 'https://unpkg.com/ht
 
 const LS_ACTIVA = 'theclub-sesion-activa', LS_PEND = 'theclub-sesiones-pendientes', LS_CAT = 'theclub-catalogo';
 const GRUPOS = ['Pecho', 'Espalda', 'Pierna', 'Glúteo', 'Hombro', 'Bíceps', 'Tríceps', 'Abdomen'];
+const TIPOS = ['Máquina', 'Polea', 'Barra', 'Mancuernas', 'Peso corporal'];
+const grupoDe = (c) => GRUPOS.includes(c?.grupo) ? c.grupo : 'Otros';
 const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const RETO = 12;
 const leer = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
@@ -22,7 +24,7 @@ const mmss = (s) => { const m = Math.floor(s / 60); return m >= 60 ? Math.floor(
 async function cargarTodo(sb, socioId) {
   const desde = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
   const [cat, rut, ses] = await Promise.all([
-    sb.from('ejercicios').select('id,nombre,grupo,equipo,maquina_num,zona,marca').eq('activo', true).order('nombre'),
+    sb.from('ejercicios').select('id,nombre,grupo,equipo,maquina_num,zona,marca,socio_id').eq('activo', true).order('nombre'),
     sb.from('rutinas').select('*').eq('socio_id', socioId).order('creado'),
     sb.from('sesiones').select('id,fecha,inicio,fin,titulo,series(ejercicio_id,ejercicio_nombre,orden,n,peso,reps)').eq('socio_id', socioId).gte('fecha', desde).order('fecha', { ascending: false }).limit(400)
   ]);
@@ -97,6 +99,8 @@ export function Entrenar({ sb, socio, avisar, activo }) {
     while (set.has(l.toISOString().slice(0, 10))) { n++; l.setDate(l.getDate() - 7); }
     return n;
   })();
+  // ejercicio propio creado, editado o borrado: se refleja al momento y queda guardado en el móvil
+  const cambioCat = (e, fuera) => setDatos((d) => { const c = d.catalogo.filter((x) => x.id !== e.id); if (!fuera) c.push(e); c.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')); guardar(LS_CAT, c); return { ...d, catalogo: c }; });
   const rutinaHoy = datos.rutinas.find((r) => (r.dias || []).includes(diaSemana(hoyISO())));
 
   const empezar = (rutina) => {
@@ -116,7 +120,7 @@ export function Entrenar({ sb, socio, avisar, activo }) {
   };
 
   if (resumen) return html`<${Resumen} r=${resumen} cerrar=${() => setResumen(null)} />`;
-  if (activa) return html`<${SesionActiva} s=${activa} set=${setActiva} M=${M} catalogo=${datos.catalogo} terminar=${terminar} avisar=${avisar} activo=${activo} />`;
+  if (activa) return html`<${SesionActiva} sb=${sb} socio=${socio} cambioCat=${cambioCat} s=${activa} set=${setActiva} M=${M} catalogo=${datos.catalogo} terminar=${terminar} avisar=${avisar} activo=${activo} />`;
 
   return html`<div class="pant">
     <header><div><p class="eyebrow">Tus entrenos</p><h1 class="serif">A <span class="kw">ENTRENAR</span></h1></div></header>
@@ -142,15 +146,15 @@ export function Entrenar({ sb, socio, avisar, activo }) {
       ${!cargado && html`<p class="faint">Cargando tus entrenos…</p>`}`}
 
     ${vista === 'historial' && html`<${Historial} sesiones=${todas} abrir=${(s) => setHoja({ tipo: 'sesion', s })} />`}
-    ${vista === 'records' && html`<${Records} M=${M} />`}
+    ${vista === 'records' && html`<${Records} catalogo=${datos.catalogo} M=${M} />`}
 
-    ${hoja?.tipo === 'rutinas' && html`<${HojaRutinas} sb=${sb} socio=${socio} rutinas=${datos.rutinas} catalogo=${datos.catalogo} cerrar=${() => setHoja(null)} cambio=${() => { recargar(); }} avisar=${avisar} />`}
+    ${hoja?.tipo === 'rutinas' && html`<${HojaRutinas} cambioCat=${cambioCat} sb=${sb} socio=${socio} rutinas=${datos.rutinas} catalogo=${datos.catalogo} cerrar=${() => setHoja(null)} cambio=${() => { recargar(); }} avisar=${avisar} />`}
     ${hoja?.tipo === 'sesion' && html`<${HojaSesion} s=${hoja.s} cerrar=${() => setHoja(null)} borrar=${async () => { await sb.from('sesiones').delete().eq('id', hoja.s.id); setHoja(null); avisar('Sesión borrada'); recargar(); }} />`}
   </div>`;
 }
 
 // ---------- sesión en curso ----------
-function SesionActiva({ s, set, M, catalogo, terminar, avisar, activo }) {
+function SesionActiva({ sb, socio, cambioCat, s, set, M, catalogo, terminar, avisar, activo }) {
   const [ahora, setAhora] = useState(Date.now()); const [picker, setPicker] = useState(false); const [abierto, setAbierto] = useState(0);
   const [salir, setSalir] = useState(false);
   useEffect(() => { if (!activo) return; const id = setInterval(() => setAhora(Date.now()), 15000); return () => clearInterval(id); }, [activo]);
@@ -173,7 +177,7 @@ function SesionActiva({ s, set, M, catalogo, terminar, avisar, activo }) {
       quitar=${() => cambiar((c) => c.ejercicios.splice(i, 1))} />`)}
     <button class="btn2" style="min-height:50px;border-style:dashed;color:var(--gold)" onClick=${() => setPicker(true)}>+ Añadir ejercicio</button>
     <button class="btn" disabled=${!series} onClick=${terminar}>Terminar entreno</button>
-    ${picker && html`<${Picker} catalogo=${catalogo} M=${M} elegir=${anadirEj} cerrar=${() => setPicker(false)} />`}
+    ${picker && html`<${Picker} sb=${sb} socio=${socio} avisar=${avisar} cambioCat=${cambioCat} catalogo=${catalogo} M=${M} elegir=${anadirEj} cerrar=${() => setPicker(false)} />`}
   </div>`;
 }
 
@@ -196,9 +200,9 @@ function Bloque({ e, i, M, cat, abierto, abrir, anadir, borrarSerie, quitar }) {
         <span class="faint num">${j + 1}</span><b class="num">${fmt(x.peso)} kg × ${x.reps}</b>
         ${rec ? html`<span style="font-size:11px;font-weight:800;color:#0A0900;background:var(--gold);border-radius:6px;padding:2px 7px">RÉCORD</span>` : html`<span class="faint num" style="font-size:12px">1RM ${fmt(Math.round(e1rm(x)))}</span>`}
         <button onClick=${() => borrarSerie(j)} aria-label=${'Borrar serie ' + (j + 1)} style="width:32px;height:32px;border:0;background:transparent;color:var(--faint)">✕</button></div>`; })}
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
-        <div class="campo"><label for=${'p' + i}>Peso (kg)</label><input id=${'p' + i} inputmode="decimal" value=${peso} onInput=${(ev) => setPeso(ev.target.value)} style="min-height:48px;text-align:center;font-weight:700" /></div>
-        <div class="campo"><label for=${'r' + i}>Reps</label><input id=${'r' + i} inputmode="numeric" value=${reps} onInput=${(ev) => setReps(ev.target.value)} style="min-height:48px;text-align:center;font-weight:700" /></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end">
+        <div class="campo"><label for=${'p' + i}>Peso (kg)</label><input id=${'p' + i} inputmode="decimal" value=${peso} onInput=${(ev) => setPeso(ev.target.value)} style="min-height:48px;width:100%;min-width:0;box-sizing:border-box;text-align:center;font-weight:700" /></div>
+        <div class="campo"><label for=${'r' + i}>Reps</label><input id=${'r' + i} inputmode="numeric" value=${reps} onInput=${(ev) => setReps(ev.target.value)} style="min-height:48px;width:100%;min-width:0;box-sizing:border-box;text-align:center;font-weight:700" /></div>
         <button class="btn" style="width:auto;min-height:48px;padding:0 18px" disabled=${!num(reps)} onClick=${() => anadir(num(peso), Math.round(num(reps)))}>+ Serie</button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px" class="muted">
@@ -207,33 +211,69 @@ function Bloque({ e, i, M, cat, abierto, abrir, anadir, borrarSerie, quitar }) {
   </div>`;
 }
 
-// ---------- elegir ejercicio o máquina ----------
-function Picker({ catalogo, M, elegir, cerrar, multiple, elegidos = [] }) {
-  const [q, setQ] = useState(''); const [g, setG] = useState(null); const [eq, setEq] = useState(null);
-  const norm = (t) => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const lista = catalogo.filter((c) => (!g || c.grupo === g) && (!eq || (eq === 'Máquinas' ? ['Máquina', 'Polea'].includes(c.equipo) : !['Máquina', 'Polea'].includes(c.equipo)))
-    && (!q || norm([c.nombre, c.grupo, c.equipo, c.maquina_num, c.zona, c.marca].join(' ')).includes(norm(q))))
+// ---------- elegir ejercicio, por grupo muscular ----------
+const norm = (t) => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const CSS_P = `.ej-g{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:0;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;font-weight:700;font-size:16px}
+.ej-g:first-child{border-top:0}.ej-g .c{margin-left:auto;color:var(--faint);font-size:13px;font-weight:600}
+.ej-g svg{color:var(--muted);transition:transform .2s;flex:none}.ej-g[aria-expanded="true"] svg{transform:rotate(90deg)}.ej-g[aria-expanded="true"]{color:var(--gold)}
+.ej-f{display:flex;align-items:center;border-top:1px solid var(--line)}
+.ej-f .el{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 0 8px 14px;border:0;background:transparent;color:inherit;text-align:left}
+.ej-f .q{flex:1;min-width:0}.ej-f b{display:block;overflow-wrap:anywhere}.ej-f small{display:block;color:var(--muted);font-size:12.5px}
+.ej-f .ed{min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--muted);font-size:13px}`;
+if (!document.getElementById('ej-css')) { const st = document.createElement('style'); st.id = 'ej-css'; st.textContent = CSS_P; document.head.append(st); }
+
+function Picker({ sb, socio, avisar, cambioCat, catalogo, M, elegir, cerrar, multiple, elegidos = [] }) {
+  const [q, setQ] = useState(''); const [g, setG] = useState(null); const [ed, setEd] = useState(null);
+  const t = norm(q.trim());
+  const lista = catalogo.filter((c) => !t || norm([c.nombre, c.grupo, c.equipo, c.maquina_num, c.zona, c.marca].join(' ')).includes(t))
     .sort((a, b) => (M.get(b.id)?.veces || 0) - (M.get(a.id)?.veces || 0) || a.nombre.localeCompare(b.nombre, 'es'));
-  const propio = q.trim() && !catalogo.some((c) => norm(c.nombre) === norm(q.trim()));
-  const inp = useRef(); useEffect(() => { setTimeout(() => inp.current?.focus(), 350); }, []);
+  const grupos = [...GRUPOS, 'Otros'].map((n) => [n, lista.filter((c) => grupoDe(c) === n)]).filter(([, xs]) => xs.length);
+  const nuevo = (grupo) => setEd({ nombre: q.trim(), grupo: grupo || '', equipo: 'Máquina' });
+  if (ed) return html`<${EditarEjercicio} sb=${sb} socio=${socio} avisar=${avisar} catalogo=${catalogo} ini=${ed} volver=${() => setEd(null)}
+    hecho=${(e, fuera) => { if (e.id) cambioCat(e, fuera); setEd(null); setQ(''); if (!fuera && !ed.id) elegir(e); }} />`;
   return html`<div class="velo" onClick=${cerrar}></div><div class="hoja" role="dialog" aria-label="Elegir ejercicio" style="max-height:88%">
     <span class="asa" aria-hidden="true"></span>
     <h2 class="serif" style="font-size:28px;font-weight:400">Elige <span class="kw">EJERCICIO</span></h2>
-    <div class="campo"><input ref=${inp} type="search" placeholder="Buscar: press, sentadilla, curl…" value=${q} onInput=${(e) => setQ(e.target.value)} aria-label="Buscar ejercicio" /></div>
-    <div class="dias" style="gap:6px">${GRUPOS.map((x) => html`<button class="chip" style="flex:none" aria-pressed=${g === x ? 'true' : 'false'} onClick=${() => setG(g === x ? null : x)}>${x}</button>`)}</div>
-    <div class="lista">
-      ${propio && html`<button class="it" style="border:0;background:transparent;color:inherit;text-align:left" onClick=${() => elegir({ id: null, nombre: q.trim() })}><span class="q"><b>Añadir «${q.trim()}»</b><small>Ejercicio propio, solo para ti</small></span><span style="color:var(--gold);font-size:22px">+</span></button>`}
-      ${lista.length === 0 && !propio ? html`<p class="faint">${catalogo.length ? 'Nada con ese filtro.' : 'Escribe el nombre para añadirlo.'}</p>` :
-        lista.slice(0, 120).map((c) => { const ya = elegidos.includes(c.id); return html`<button class="it" style="border-left:0;border-right:0;border-bottom:0;background:transparent;color:inherit;text-align:left;width:100%" onClick=${() => elegir(c)}>
-          <span class="q"><b>${c.nombre}</b><small>${[c.grupo, c.equipo, c.maquina_num && 'nº ' + c.maquina_num, c.zona].filter(Boolean).join(' · ')}${M.get(c.id)?.rm ? ' · 1RM ' + fmt(Math.round(M.get(c.id).rm.v)) + ' kg' : ''}</small></span>
-          <span style=${'font-size:20px;color:' + (ya ? 'var(--gold)' : 'var(--faint)')}>${multiple ? (ya ? '✓' : '+') : '›'}</span></button>`; })}
-    </div>
+    <div class="campo"><input type="search" placeholder="Buscar" value=${q} onInput=${(e) => setQ(e.target.value)} aria-label="Buscar ejercicio" /></div>
+    <button class="btn2" style="min-height:48px;border-style:dashed;color:var(--gold)" onClick=${() => nuevo(g)}>${t ? 'Crear «' + q.trim() + '»' : '+ Nuevo ejercicio'}</button>
+    <div>${grupos.length === 0 ? html`<p class="faint" style="margin:0">No hay ninguno con ese nombre.</p>` : grupos.map(([n, xs]) => { const ab = !!t || g === n; return html`<div key=${n}>
+      <button class="ej-g" aria-expanded=${ab ? 'true' : 'false'} onClick=${() => !t && setG(g === n ? null : n)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>${n}<span class="c num">${xs.length}</span></button>
+      ${ab && xs.map((c) => { const ya = elegidos.includes(c.id); return html`<div class="ej-f" key=${c.id}><button class="el" aria-pressed=${multiple ? (ya ? 'true' : 'false') : undefined} onClick=${() => elegir(c)}>
+        <span class="q"><b>${c.nombre}</b><small>${[c.equipo, c.maquina_num && 'nº ' + c.maquina_num, c.zona, c.socio_id && 'Tuyo'].filter(Boolean).join(' · ')}${M.get(c.id)?.rm ? ' · 1RM ' + fmt(Math.round(M.get(c.id).rm.v)) + ' kg' : ''}</small></span>
+        <span style=${'font-size:20px;color:' + (ya ? 'var(--gold)' : 'var(--faint)')}>${multiple ? (ya ? '✓' : '+') : '›'}</span></button>${c.socio_id && html`<button class="ed" onClick=${() => setEd({ ...c })}>Editar</button>`}</div>`; })}</div>`; })}</div>
     ${multiple && html`<button class="btn" onClick=${cerrar}>Hecho</button>`}
   </div>`;
 }
 
+function EditarEjercicio({ sb, socio, avisar, catalogo, ini, volver, hecho }) {
+  const [f, setF] = useState(ini); const [oc, setOc] = useState(false); const [seguro, setSeguro] = useState(false); const [err, setErr] = useState('');
+  const chips = (xs, k) => html`<div class="chips" style="margin-top:8px">${xs.map((x) => html`<button class="chip" style="min-height:44px" aria-pressed=${f[k] === x ? 'true' : 'false'} onClick=${() => { setF({ ...f, [k]: x }); setErr(''); }}>${x}</button>`)}</div>`;
+  const guardarE = async () => {
+    const nombre = f.nombre.trim(); if (nombre.length < 2) return setErr('Ponle un nombre'); if (!f.grupo) return setErr('Elige el grupo muscular');
+    if (catalogo.some((c) => c.id !== f.id && norm(c.nombre) === norm(nombre))) return setErr('Ya hay un ejercicio con ese nombre');
+    setOc(true); const fila = { nombre, grupo: f.grupo, equipo: f.equipo };
+    let r; try { r = await (f.id ? sb.from('ejercicios').update(fila).eq('id', f.id) : sb.from('ejercicios').insert({ ...fila, socio_id: socio.id })).select('id,nombre,grupo,equipo,maquina_num,zona,marca,socio_id').single(); } catch (e) { r = { error: e }; }
+    setOc(false);
+    if (!r.error) { avisar(f.id ? 'Cambios guardados' : 'Ejercicio creado'); return hecho(r.data); }
+    if (r.error.code === '23505') return setErr('Ya hay un ejercicio con ese nombre');
+    if (!f.id && (!navigator.onLine || /fetch|network|load failed/i.test(r.error.message || ''))) { avisar('Sin conexión: vale para este entreno, pero no queda en tu lista'); return hecho({ id: null, nombre }); }
+    setErr(r.error.message || 'No se ha podido guardar');
+  };
+  const borrar = async () => { if (!seguro) return setSeguro(true); setOc(true); const { error } = await sb.from('ejercicios').update({ activo: false }).eq('id', f.id); setOc(false); if (error) return setErr('No se ha podido borrar'); avisar('Ejercicio borrado. Tus marcas se conservan'); hecho(f, true); };
+  return html`<div class="velo" onClick=${volver}></div><div class="hoja" role="dialog" aria-label=${f.id ? 'Editar ejercicio' : 'Nuevo ejercicio'} style="max-height:88%">
+    <span class="asa" aria-hidden="true"></span>
+    <h2 class="serif" style="font-size:28px;font-weight:400">${f.id ? 'Editar' : 'Nuevo'} <span class="kw">EJERCICIO</span></h2>
+    <div class="campo"><label for="ej-n">Nombre</label><input id="ej-n" maxlength="60" placeholder="Press en máquina" value=${f.nombre} onInput=${(e) => { setF({ ...f, nombre: e.target.value }); setErr(''); }} /></div>
+    <div><span class="lab">Grupo muscular</span>${chips([...GRUPOS, 'Otros'], 'grupo')}</div>
+    <div><span class="lab">Con qué se hace</span>${chips(TIPOS, 'equipo')}</div>
+    ${err && html`<p class="err">${err}</p>`}
+    <button class="btn" disabled=${oc} onClick=${guardarE}>${f.id ? 'Guardar' : 'Crear ejercicio'}</button>
+    <div class="fila"><button class="btn2" onClick=${volver}>Volver</button>${f.id ? html`<button class="btn2" style="color:var(--bad)" disabled=${oc} onClick=${borrar}>${seguro ? '¿Seguro?' : 'Borrar'}</button>` : html`<span></span>`}</div>
+  </div>`;
+}
+
 // ---------- rutinas ----------
-function HojaRutinas({ sb, socio, rutinas, catalogo, cerrar, cambio, avisar }) {
+function HojaRutinas({ cambioCat, sb, socio, rutinas, catalogo, cerrar, cambio, avisar }) {
   const [ed, setEd] = useState(null); const [pick, setPick] = useState(false);
   const nueva = () => setEd({ nombre: '', dias: [], ejercicios: [] });
   const guardarR = async () => {
@@ -261,7 +301,7 @@ function HojaRutinas({ sb, socio, rutinas, catalogo, cerrar, cambio, avisar }) {
         <button class="btn2" style="width:100%;margin-top:8px;border-style:dashed;color:var(--gold)" onClick=${() => setPick(true)}>+ Añadir ejercicios</button></div>
       <button class="btn" onClick=${guardarR}>Guardar rutina</button>
       <div class="fila"><button class="btn2" onClick=${() => setEd(null)}>Volver</button>${ed.id ? html`<button class="btn2" style="color:var(--bad)" onClick=${borrar}>Borrar</button>` : html`<span></span>`}</div>`}
-    ${pick && html`<${Picker} catalogo=${catalogo} M=${new Map()} multiple=${true} elegidos=${ed.ejercicios.map((e) => e.id)} elegir=${toggle} cerrar=${() => setPick(false)} />`}
+    ${pick && html`<${Picker} sb=${sb} socio=${socio} avisar=${avisar} cambioCat=${cambioCat} catalogo=${catalogo} M=${new Map()} multiple=${true} elegidos=${ed.ejercicios.map((e) => e.id)} elegir=${toggle} cerrar=${() => setPick(false)} />`}
   </div>`;
 }
 
@@ -273,11 +313,11 @@ function Historial({ sesiones, abrir }) {
     return html`<button class="it" style="border-left:0;border-right:0;border-bottom:0;background:transparent;color:inherit;text-align:left;width:100%" onClick=${() => abrir(s)}>
       <span class="q"><b>${s.titulo || 'Entreno'}</b><small class="num">${fechaCorta(s.fecha)} · ${s.ejercicios.length} ejercicios · ${n} series · ${Math.round(v)} kg</small></span><span class="faint">›</span></button>`; })}</div>`;
 }
-function Records({ M }) {
-  const xs = [...M.values()].filter((r) => r.rm && r.rm.v > 0).sort((a, b) => b.rm.v - a.rm.v);
+function Records({ M, catalogo }) {
+  const xs = [...M].filter(([, r]) => r.rm && r.rm.v > 0).map(([k, r]) => ({ ...r, g: grupoDe(catalogo.find((c) => c.id === k) || catalogo.find((c) => norm(c.nombre) === norm(r.nombre))) })).sort((a, b) => b.rm.v - a.rm.v);
   if (!xs.length) return html`<div class="vacio">Tus mejores marcas aparecerán aquí: 1RM estimado y peso máximo de cada ejercicio.</div>`;
-  return html`<div class="lista">${xs.map((r) => html`<div class="it"><span class="q"><b>${r.nombre}</b><small class="num">Máx. ${fmt(r.max.peso)} kg × ${r.max.reps} · ${fechaCorta(r.rm.fecha)}</small></span>
-    <span style="text-align:right"><b class="kw num" style="font-size:20px">${fmt(Math.round(r.rm.v * 2) / 2)}</b><small class="faint" style="display:block;font-size:11px">1RM kg</small></span></div>`)}</div>`;
+  return html`<div style="display:flex;flex-direction:column;gap:22px">${[...GRUPOS, 'Otros'].filter((g) => xs.some((r) => r.g === g)).map((g) => html`<div key=${g}><span class="lab" style="color:var(--gold)">${g}</span><div class="lista">${xs.filter((r) => r.g === g).map((r) => html`<div class="it"><span class="q"><b>${r.nombre}</b><small class="num">Máx. ${fmt(r.max.peso)} kg × ${r.max.reps} · ${fechaCorta(r.rm.fecha)}</small></span>
+    <span style="text-align:right"><b class="kw num" style="font-size:20px">${fmt(Math.round(r.rm.v * 2) / 2)}</b><small class="faint" style="display:block;font-size:11px">1RM kg</small></span></div>`)}</div></div>`)}</div>`;
 }
 function HojaSesion({ s, cerrar, borrar }) {
   const [seguro, setSeguro] = useState(false);
