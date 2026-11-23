@@ -173,6 +173,8 @@ h();addEventListener('resize',h);addEventListener('orientationchange',function()
 import { html, render, useState, useEffect, useCallback, useMemo } from 'https://unpkg.com/htm@3.1.1/preact/standalone.module.js';
 import { codigoQR } from './qr.js';
 import { Entrenar } from './entreno.js';
+import { Gestion } from './gestion.js';
+import { Clases, misClases } from './clases.js';
 
 const sb = window.supabase.createClient(window.THECLUB.url, window.THECLUB.anonKey);
 const WHATSAPP = 'https://wa.me/34610847910';
@@ -280,8 +282,8 @@ function Acceso({ socio, ir, activo }) {
   useEffect(() => {
     sb.rpc('aforo_actual').then(({ data }) => data && setAforo(data)).catch(() => {});
     sb.from('accesos').select('cuando,resultado').eq('socio_id', socio.id).eq('resultado', 'ok').neq('lector', 'simulador').order('cuando', { ascending: false }).limit(3).then(({ data }) => setEntradas(data || []));
-    misReservas(socio.id).then(setReservas).catch(() => {});
   }, []);
+  useEffect(() => { if (activo) todasMis(socio.id).then(setReservas).catch(() => {}); }, [activo]);
   useEffect(() => {
     if (!grande || !('wakeLock' in navigator)) return;
     let lock; navigator.wakeLock.request('screen').then((l) => (lock = l)).catch(() => {});
@@ -303,7 +305,7 @@ function Acceso({ socio, ir, activo }) {
     ${reservas.map((r) => html`<button class="card oro" onClick=${() => ir('reservas')} style="flex-direction:row;align-items:center;gap:14px;text-align:left;color:var(--ink)">
       <span style="width:46px;height:46px;flex:none;border-radius:12px;background:var(--gold);color:#0A0900;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1">
         <span style="font-size:10px;font-weight:800;letter-spacing:.1em">${SEM[new Date(r.inicio).getDay()]}</span><span style="font:800 20px 'Bricolage Grotesque';font-stretch:80%">${new Date(r.inicio).getDate()}</span></span>
-      <span style="flex:1"><span class="lab">Tu próxima reserva</span><br /><b>${r.servicio} · ${hhmm(r.inicio)} h</b></span><span style="color:var(--gold)">${ICON.flecha}</span></button>`)}
+      <span style="flex:1"><span class="lab">Tu próxima reserva</span><br /><b>${r.servicio} · ${hhmm(r.inicio)} h</b>${r.nota && html`<br /><small class="muted">${r.nota}</small>`}</span><span style="color:var(--gold)">${ICON.flecha}</span></button>`)}
     <div class="fila">
       <button class="card" onClick=${() => ir('cuota')} style="text-align:left;color:var(--ink)"><span class="lab">Tu cuota</span><b>${socio.tarifa || '—'}</b><span class="pill" style=${'--c:' + color}>${etiqueta}</span></button>
       ${aforo?.hay_datos ? html`<div class="card"><span class="lab">Aforo ahora</span><b>${aforo.dentro < 25 ? 'Tranquilo' : aforo.dentro < 60 ? 'Normal' : 'Lleno'}</b><span class="pill" style="--c:var(--muted)">${aforo.dentro} dentro</span></div>`
@@ -320,6 +322,7 @@ function Acceso({ socio, ir, activo }) {
 }
 
 // ======================= RESERVAS =======================
+const todasMis = async (id) => { const r = await Promise.all([misReservas(id), misClases(sb).catch(() => [])]); return r.flat().sort((a, b) => a.inicio.localeCompare(b.inicio)); };
 async function misReservas(socioId) {
   const { data } = await sb.from('reservas').select('id,estado,huecos(inicio,fin,servicio)').eq('socio_id', socioId).eq('estado', 'confirmada');
   const { data: serv } = await sb.from('servicios').select('codigo,nombre');
@@ -330,12 +333,13 @@ async function misReservas(socioId) {
 function Reservas({ socio, avisar, activo }) {
   const [servicios, setServicios] = useState([]); const [srv, setSrv] = useState(null);
   const [huecos, setHuecos] = useState(null); const [dia, setDia] = useState(null); const [sel, setSel] = useState(null);
-  const [mias, setMias] = useState([]); const [ocup, setOcup] = useState(false); const [err, setErr] = useState('');
-  useEffect(() => { sb.from('servicios').select('*').eq('activo', true).order('nombre').then(({ data }) => { setServicios(data || []); setSrv((data || [])[0]?.codigo || null); }); recargarMias(); }, []);
+  const [mias, setMias] = useState([]); const [ocup, setOcup] = useState(false); const [err, setErr] = useState(''); const [ver, setVer] = useState(0);
+  useEffect(() => { sb.from('servicios').select('*').eq('activo', true).order('nombre').then(({ data }) => { setServicios([...(data || []), { codigo: 'clases', nombre: 'Clases' }]); setSrv((data || [])[0]?.codigo || 'clases'); }); recargarMias(); }, []);
   useEffect(() => { if (srv) cargarHuecos(); }, [srv]);
   useEffect(() => { if (activo && srv) { recargarMias(); cargarHuecos(); } }, [activo]);
-  const recargarMias = () => misReservas(socio.id).then(setMias).catch(() => {});
+  const recargarMias = () => todasMis(socio.id).then(setMias).catch(() => {});
   const cargarHuecos = async () => {
+    if (srv === 'clases') return;
     setHuecos(null); setSel(null); setErr('');
     const { data, error } = await sb.rpc('huecos_disponibles', { p_servicio: srv });
     const xs = error ? [] : data; setHuecos(xs);
@@ -353,20 +357,20 @@ function Reservas({ socio, avisar, activo }) {
     avisar(s.nombre + ' reservada: ' + diaLargo(sel.inicio) + ', ' + hhmm(sel.inicio) + ' h'); recargarMias(); cargarHuecos();
   };
   const anular = async (r) => {
-    const { error } = await sb.rpc('cancelar_reserva', { p_reserva: r.id });
-    if (error) avisar(msgError(error)); else { avisar('Reserva anulada'); recargarMias(); cargarHuecos(); }
+    const { error } = await sb.rpc(r.clase ? 'cancelar_clase' : 'cancelar_reserva', { p_reserva: r.id });
+    if (error) avisar(msgError(error)); else { avisar('Reserva anulada'); setVer((v) => v + 1); recargarMias(); cargarHuecos(); }
   };
   const idx = servicios.findIndex((x) => x.codigo === srv);
   return html`<div class="pant">
     <header><div><p class="eyebrow">Servicios del club</p><h1 class="serif">Reserva tu <span class="kw">HORA</span></h1></div></header>
     ${mias.length > 0 && html`<div style="display:flex;flex-direction:column;gap:8px"><span class="lab">Tus reservas</span>
-      ${mias.map((r) => html`<div class="card oro" style="flex-direction:row;align-items:center;gap:12px"><div style="flex:1"><b>${r.servicio} · ${hhmm(r.inicio)} h</b><div class="muted" style="font-size:13px">${diaLargo(r.inicio)}</div></div>
+      ${mias.map((r) => html`<div class="card oro" style="flex-direction:row;align-items:center;gap:12px"><div style="flex:1"><b>${r.servicio} · ${hhmm(r.inicio)} h</b><div class="muted" style="font-size:13px">${diaLargo(r.inicio)}${r.nota ? ' · ' + r.nota : ''}</div></div>
         <button class="btn2" onClick=${() => anular(r)}>Anular</button></div>`)}</div>`}
     ${servicios.length === 0 ? html`<div class="vacio">Todavía no hay servicios para reservar.</div>` : html`
       ${servicios.length > 1 && html`<div class="seg" role="group" aria-label="Servicio"><span class="ind" style=${'width:calc((100% - 8px)/' + servicios.length + ');transform:translateX(' + idx * 100 + '%)'}></span>
         ${servicios.map((x) => html`<button aria-pressed=${x.codigo === srv ? 'true' : 'false'} onClick=${() => setSrv(x.codigo)}>${x.nombre}</button>`)}</div>`}
-      ${s && html`<p class="muted" style="margin:-4px 0 0;font-size:13.5px">${s.descripcion || ''} · ${s.duracion_min} min</p>`}
-      ${huecos === null ? html`<p class="faint">Buscando horas…</p>` : huecos.length === 0 ? html`<div class="vacio">No hay horas abiertas para ${s?.nombre?.toLowerCase()} ahora mismo. El club las publica cada semana; vuelve a mirar en unos días.</div>` : html`
+      ${s && srv !== 'clases' && html`<p class="muted" style="margin:-4px 0 0;font-size:13.5px">${s.descripcion || ''} · ${s.duracion_min} min</p>`}
+      ${srv === 'clases' ? html`<${Clases} sb=${sb} avisar=${avisar} puede=${puede} activo=${activo} version=${ver} alCambiar=${recargarMias} />` : huecos === null ? html`<p class="faint">Buscando horas…</p>` : huecos.length === 0 ? html`<div class="vacio">No hay horas abiertas para ${s?.nombre?.toLowerCase()} ahora mismo. El club las publica cada semana; vuelve a mirar en unos días.</div>` : html`
         <div><span class="lab">Elige día</span><div class="dias" style="margin-top:8px">${dias.map((d) => { const f = new Date(d + 'T12:00:00'); return html`
           <button class="dia" aria-pressed=${d === dia ? 'true' : 'false'} onClick=${() => { setDia(d); setSel(null); }} aria-label=${diaLargo(d + 'T12:00:00')}><span>${SEM[f.getDay()]}</span><b>${f.getDate()}</b><span>${MES[f.getMonth()]}</span></button>`; })}</div></div>
         <div><span class="lab">Elige hora</span><div class="horas" style="margin-top:8px">${delDia.map((h) => html`
@@ -423,7 +427,7 @@ function Cuota({ socio, salir }) {
     <a class="card" href=${WHATSAPP} target="_blank" rel="noopener" style="flex-direction:row;align-items:center;gap:14px;color:var(--ink);text-decoration:none"><span style="color:var(--gold)">${ICON.wa}</span>
       <span style="flex:1"><b>¿Dudas con tu cuota?</b><br /><span class="muted" style="font-size:13px">Escríbenos por WhatsApp</span></span>${ICON.flecha}</a>
     <div style="display:flex;gap:10px"><button class="btn2" style="flex:1" onClick=${() => setClave(true)}>Poner contraseña</button><button class="btn2" style="flex:1" onClick=${salir}>Cerrar sesión</button></div>
-    <p class="faint" style="text-align:center;font-size:11px;margin:4px 0 0">Versión 12 · ${screen.height}/${window.innerHeight}/${document.documentElement.style.getPropertyValue('--app-h')}</p>
+    <p class="faint" style="text-align:center;font-size:11px;margin:4px 0 0">Versión 13 · ${screen.height}/${window.innerHeight}/${document.documentElement.style.getPropertyValue('--app-h')}</p>
     <p class="nota">Actualizado ${new Date(socio.actualizado).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
     ${clave && html`<${HojaClave} cerrar=${() => setClave(false)} />`}
   </div>`;
@@ -445,11 +449,13 @@ function HojaClave({ cerrar }) {
 function App() {
   const [socio, setSocio] = useState(leerLS(GUARDADO)); const [estado, setEstado] = useState('cargando');
   const [tab, setTab] = useState('acceso'); const [vistos, setVistos] = useState({ acceso: true });
-  const ir = (k) => { setVistos((v) => (v[k] ? v : { ...v, [k]: true })); setTab(k); }; const [toast, setToast] = useState(null); const [nuevos, setNuevos] = useState(false);
+  const ir = (k) => { setVistos((v) => (v[k] ? v : { ...v, [k]: true })); setTab(k); }; const [toast, setToast] = useState(null); const [staff, setStaff] = useState(null); const [nuevos, setNuevos] = useState(false);
   const avisar = (t) => { setToast(t); clearTimeout(window.__t); window.__t = setTimeout(() => setToast(null), 2600); };
   const refrescar = async () => {
     const { data } = await sb.auth.getSession();
     if (!data.session) { setEstado(socio ? 'listo' : 'login'); return; }
+    sb.rpc('asegurar_agenda').then(() => {}, () => {});
+    sb.from('staff').select('rol').eq('user_id', data.session.user.id).maybeSingle().then((r) => { if (!r.error) setStaff(r.data); }, () => {});
     try { const s = await cargarSocio(); if (s) { setSocio(s); setEstado('listo'); } else setEstado('sinficha'); }
     catch { setEstado(socio ? 'listo' : 'login'); }
   };
@@ -459,11 +465,13 @@ function App() {
     const vis = () => document.visibilityState === 'visible' && refrescar();
     document.addEventListener('visibilitychange', vis); return () => document.removeEventListener('visibilitychange', vis);
   }, []);
-  const salir = async () => { await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setEstado('login'); setTab('acceso'); setVistos({ acceso: true }); };
+  const salir = async () => { await sb.auth.signOut(); guardarLS(GUARDADO, null); setSocio(null); setStaff(null); setEstado('login'); setTab('acceso'); setVistos({ acceso: true }); };
   const marcarLeidos = (xs) => { guardarLS('theclub-avisos-vistos', xs.map((a) => a.id)); setNuevos(false); };
 
   if (estado === 'cargando' && !socio) return html`<div class="shell"><div class="pant"><header><img src="logo.svg" alt="The Club Fitness" /></header><p class="nota">Cargando…</p></div></div>`;
   if (estado === 'login' && !socio) return html`<${Login} onOk=${refrescar} />`;
+  const toastV = toast && html`<div class="toast" role="status">${toast}</div>`;
+  if (estado === 'sinficha' && staff) return html`<div class="shell"><div class="top"><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn" onClick=${salir}>Salir</button></div><main class="panes"><section class="pane on"><${Gestion} sb=${sb} avisar=${avisar} admin=${staff.rol === 'admin'} /></section></main>${toastV}</div>`;
   if (estado === 'sinficha') return html`<div class="shell"><div class="pant"><header><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn" onClick=${salir}>Salir</button></header>
     <h1 class="serif">No encontramos <span class="kw">TU FICHA</span></h1><p class="muted">Este correo no consta como socio del club. Pásate por recepción o escríbenos para revisarlo.</p>
     <a class="btn2" href=${WHATSAPP} target="_blank" rel="noopener" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;color:var(--gold)">${ICON.wa} Escribir al club</a></div></div>`;
@@ -475,12 +483,13 @@ function App() {
     entrenar: () => html`<${Entrenar} sb=${sb} socio=${socio} avisar=${avisar} activo=${tab === 'entrenar'} />`,
     reservas: () => html`<${Reservas} socio=${socio} avisar=${avisar} activo=${tab === 'reservas'} />`,
     club: () => html`<${Club} marcarLeidos=${marcarLeidos} />`,
+    gestion: () => html`<${Gestion} sb=${sb} avisar=${avisar} admin=${staff?.rol === 'admin'} />`,
     cuota: () => html`<${Cuota} socio=${socio} salir=${salir} />`
   };
   return html`<div class="shell">
-    <div class="top"><img src="logo.svg" alt="The Club Fitness" /><button class="chipbtn num" onClick=${() => ir('cuota')}>Nº ${socio.num}</button></div>
-    <main class="panes">${TABS.map(([k]) => vistos[k] && html`<section key=${k} class=${'pane' + (tab === k ? ' on' : '')} aria-hidden=${tab === k ? 'false' : 'true'}>${PANT[k]()}</section>`)}</main>
-    <nav class="tabs" aria-label="Secciones"><span class="ind" style=${'transform:translateX(' + ti * 100 + '%)'}><i></i></span>
+    <div class="top"><img src="logo.svg" alt="The Club Fitness" /><span style="display:flex;gap:8px">${staff && html`<button class="chipbtn" style=${tab === 'gestion' ? 'color:#0A0900;background:var(--gold);border-color:var(--gold)' : 'color:var(--gold);border-color:rgba(232,208,112,.45)'} onClick=${() => ir('gestion')}>Gestión</button>`}<button class="chipbtn num" onClick=${() => ir('cuota')}>Nº ${socio.num}</button></span></div>
+    <main class="panes">${[...TABS, ...(staff ? [['gestion']] : [])].map(([k]) => vistos[k] && html`<section key=${k} class=${'pane' + (tab === k ? ' on' : '')} aria-hidden=${tab === k ? 'false' : 'true'}>${PANT[k]()}</section>`)}</main>
+    <nav class="tabs" aria-label="Secciones"><span class="ind" style=${ti < 0 ? 'opacity:0' : 'transform:translateX(' + ti * 100 + '%)'}><i></i></span>
       ${TABS.map(([k, n]) => html`<button aria-current=${tab === k ? 'page' : undefined} onClick=${() => ir(k)}>${ICON[k]}${n}${k === 'club' && nuevos ? html`<span class="dot" aria-label="Novedades"></span>` : ''}</button>`)}</nav>
     ${toast && html`<div class="toast" role="status">${toast}</div>`}
   </div>`;
