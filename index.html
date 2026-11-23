@@ -423,6 +423,7 @@ function Cuota({ socio, salir }) {
     <a class="card" href=${WHATSAPP} target="_blank" rel="noopener" style="flex-direction:row;align-items:center;gap:14px;color:var(--ink);text-decoration:none"><span style="color:var(--gold)">${ICON.wa}</span>
       <span style="flex:1"><b>¿Dudas con tu cuota?</b><br /><span class="muted" style="font-size:13px">Escríbenos por WhatsApp</span></span>${ICON.flecha}</a>
     <div style="display:flex;gap:10px"><button class="btn2" style="flex:1" onClick=${() => setClave(true)}>Poner contraseña</button><button class="btn2" style="flex:1" onClick=${salir}>Cerrar sesión</button></div>
+    <p class="faint" style="text-align:center;font-size:11px;margin:4px 0 0">Versión 12 · ${screen.height}/${window.innerHeight}/${document.documentElement.style.getPropertyValue('--app-h')}</p>
     <p class="nota">Actualizado ${new Date(socio.actualizado).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
     ${clave && html`<${HojaClave} cerrar=${() => setClave(false)} />`}
   </div>`;
